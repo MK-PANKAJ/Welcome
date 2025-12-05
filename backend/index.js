@@ -1,6 +1,6 @@
 require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
+// const mongoose = require('mongoose'); // Removed for SQLite migration
 const cors = require('cors');
 const QRCode = require('qrcode');
 const { createCanvas, loadImage } = require('canvas');
@@ -8,6 +8,9 @@ const cloudinary = require('cloudinary').v2;
 const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
+
+// Import SQLite Wrapper
+const { Certificate } = require('./database');
 
 const app = express();
 app.use(express.json());
@@ -52,25 +55,8 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/highfurries')
-    .then(() => console.log('MongoDB Connected'))
-    .catch(err => console.error('MongoDB Error:', err));
-
-// Mongoose Model
-const CertificateSchema = new mongoose.Schema({
-    certId: { type: String, required: true, unique: true },
-    candidateName: String,
-    position: String,
-    hours: String,
-    startDate: String,
-    endDate: String,
-    email: String,
-    issueDate: String, // Keep for record
-    cloudinaryUrl: String,
-    valid: { type: Boolean, default: true }
-});
-const Certificate = mongoose.model('Certificate', CertificateSchema);
+// MongoDB Connection REMOVED - using SQLite via local file certificates.db
+// Mongoose Model REMOVED - using ./database.js
 
 
 // --- Email Configuration ---
