@@ -64,6 +64,7 @@ cloudinary.config({
 // Prioritize explicit SMTP settings, fall back to Gmail shorthand if only USER/PASS present
 const createTransporter = () => {
     if (process.env.SMTP_HOST) {
+        console.log(`[Email] Configuring SMTP: ${process.env.SMTP_HOST}:${process.env.SMTP_PORT || 587} (Secure: ${process.env.SMTP_SECURE === 'true'})`);
         return nodemailer.createTransport({
             host: process.env.SMTP_HOST,
             port: process.env.SMTP_PORT || 587,
@@ -71,7 +72,8 @@ const createTransporter = () => {
             auth: {
                 user: process.env.SMTP_USER || process.env.EMAIL_USER,
                 pass: process.env.SMTP_PASS || process.env.EMAIL_PASS
-            }
+            },
+            connectionTimeout: 10000 // 10 seconds
         });
     } else {
         // Legacy/Simple Gmail support
