@@ -38,7 +38,9 @@
              <p><strong>Name:</strong> <span id="hf-name"></span></p>
              <p><strong>Course:</strong> <span id="hf-course"></span></p>
              <p><strong>Date:</strong> <span id="hf-date"></span></p>
-             <a id="hf-download" href="#" target="_blank" style="display: inline-block; margin-top: 10px; text-decoration: none; color: #007bff;">Download Original Certificate &rarr;</a>
+             <!-- Secure Email Button -->
+            <button onclick="hfEmailCert()" style="margin-top: 15px; background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">📧 Email Me a Copy</button>
+            <div id="hf-email-result" style="font-size: 12px; margin-top: 5px;"></div>
          </div>
      </div>
  </div>
@@ -74,7 +76,7 @@
                  document.getElementById('hf-name').innerText = data.candidateName;
                  document.getElementById('hf-course').innerText = data.position;
                  document.getElementById('hf-date').innerText = data.issueDate;
-                 document.getElementById('hf-download').href = data.cloudinaryUrl;
+                 // document.getElementById('hf-download').href = data.cloudinaryUrl; // Removed
                  details.style.display = 'block';
              } else {
                  throw new Error(data.message || "Invalid Certificate");
@@ -84,7 +86,22 @@
              statusMsg.style.color = "#dc3545";
              details.style.display = 'none';
          }
-     };
+             details.style.display = 'none';
+        }
+    };
+
+    window.hfEmailCert = async function() {
+        const id = document.getElementById('hf-cert-input').value.trim();
+        const resDiv = document.getElementById('hf-email-result');
+        if(!id) return;
+        resDiv.innerHTML = "Sending...";
+        try {
+           const res = await fetch(API_BASE.replace('verify/','resend-email/') + id, {method:'POST'});
+           const data = await res.json();
+           resDiv.innerHTML = data.success ? "✅ " + data.message : "❌ " + data.message;
+           resDiv.style.color = data.success ? "green" : "red";
+        } catch(e) { resDiv.innerHTML = "❌ Connection Error"; }
+    };
  })();
  </script>
  <!-- END: High Furries Verification Widget -->

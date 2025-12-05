@@ -265,6 +265,37 @@ app.get('/api/public/verify/:id', async (req, res) => {
     }
 });
 
+// 3.5 Public Resend Email Endpoint
+app.post('/api/public/resend-email/:id', async (req, res) => {
+    try {
+        const cert = await Certificate.findOne({ certId: req.params.id });
+
+        if (!cert) {
+            return res.status(404).json({ success: false, message: 'Certificate not found' });
+        }
+
+        if (!cert.valid) {
+            return res.json({ success: false, message: 'Certificate has been revoked' });
+        }
+
+        // Mask email for privacy in response
+        const maskedEmail = cert.email.replace(/(.{2})(.*)(@.*)/, '$1***$3');
+
+        // Send Email
+        const emailSent = await sendCertEmail(cert.email, cert.candidateName, cert.cloudinaryUrl);
+
+        if (emailSent) {
+            res.json({ success: true, message: `Certificate sent to ${maskedEmail}` });
+        } else {
+            res.status(500).json({ success: false, message: 'Failed to send email' });
+        }
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
 // 4. Admin Registry (List all)
 app.get('/api/admin/registry', async (req, res) => {
     // In real app, verify admin-token here
