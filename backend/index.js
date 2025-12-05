@@ -73,7 +73,7 @@ const createTransporter = () => {
                 user: process.env.SMTP_USER || process.env.EMAIL_USER,
                 pass: process.env.SMTP_PASS || process.env.EMAIL_PASS
             },
-            connectionTimeout: 10000 // 10 seconds
+            connectionTimeout: 30000 // 30 seconds
         });
     } else {
         // Legacy/Simple Gmail support
@@ -108,10 +108,10 @@ const sendCertEmail = async (toEmail, name, cloudinaryUrl) => {
     try {
         await transporter.sendMail(mailOptions);
         console.log(`Email sent to ${toEmail}`);
-        return true;
+        return { success: true };
     } catch (error) {
         console.error(`Error sending email to ${toEmail}:`, error);
-        return false;
+        return { success: false, error: error.message };
     }
 };
 
@@ -301,12 +301,13 @@ app.post('/api/public/resend-email/:id', async (req, res) => {
         const maskedEmail = cert.email.replace(/(.{2})(.*)(@.*)/, '$1***$3');
 
         // Send Email
-        const emailSent = await sendCertEmail(cert.email, cert.candidateName, cert.cloudinaryUrl);
+        const result = await sendCertEmail(cert.email, cert.candidateName, cert.cloudinaryUrl);
 
-        if (emailSent) {
+        if (result.success) {
             res.json({ success: true, message: `Certificate sent to ${maskedEmail}` });
         } else {
-            res.status(500).json({ success: false, message: 'Failed to send email' });
+            // Return the specific error message for debugging
+            res.status(500).json({ success: false, message: 'Failed to send email', error: result.error });
         }
 
     } catch (error) {
