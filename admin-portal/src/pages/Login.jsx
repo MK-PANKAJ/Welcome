@@ -2,7 +2,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = 'http://localhost:8080/api/admin/login'; // Adjust if deployed
+const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/admin/login`;
 
 export default function Login() {
     const [password, setPassword] = useState('');
