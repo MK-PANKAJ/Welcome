@@ -76,7 +76,7 @@
                  document.getElementById('hf-name').innerText = data.candidateName;
                  document.getElementById('hf-course').innerText = data.position;
                  document.getElementById('hf-date').innerText = data.issueDate;
-                 // document.getElementById('hf-download').href = data.cloudinaryUrl; // Removed
+
                  details.style.display = 'block';
              } else {
                  throw new Error(data.message || "Invalid Certificate");
@@ -86,8 +86,6 @@
              statusMsg.style.color = "#dc3545";
              details.style.display = 'none';
          }
-             details.style.display = 'none';
-        }
     };
 
     window.hfEmailCert = async function() {

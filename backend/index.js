@@ -256,8 +256,8 @@ app.get('/api/public/verify/:id', async (req, res) => {
             hours: cert.hours,
             issueDate: cert.issueDate,
             startDate: cert.startDate,
-            endDate: cert.endDate,
-            cloudinaryUrl: cert.cloudinaryUrl
+            endDate: cert.endDate
+            // cloudinaryUrl removed for security
         });
 
     } catch (error) {
