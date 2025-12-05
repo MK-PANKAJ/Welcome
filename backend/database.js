@@ -1,42 +1,47 @@
-const Datastore = require('nedb-promises');
-const path = require('path');
+const mongoose = require('mongoose');
 
-// Initialize database
-const dbDir = process.env.PERSISTENT_STORAGE_PATH || __dirname;
-const dbPath = path.join(dbDir, 'certificates.db');
-
-// Ensure directory exists if using persistent path
-const fs = require('fs');
-if (process.env.PERSISTENT_STORAGE_PATH) {
+// --- MongoDB Connection ---
+const connectDB = async () => {
     try {
-        if (!fs.existsSync(dbDir)) {
-            console.log(`Creating persistent directory: ${dbDir}`);
-            fs.mkdirSync(dbDir, { recursive: true });
-        }
-    } catch (err) {
-        console.warn(`[WARNING] Could not create directory ${dbDir}. If this is a mounted disk, this is likely fine. Error: ${err.message}`);
+        const conn = await mongoose.connect(process.env.MONGO_URI);
+        console.log(`[MongoDB] Connected: ${conn.connection.host}`);
+    } catch (error) {
+        console.error(`[MongoDB] Connection Error: ${error.message}`);
+        // Do not exit, let it try to reconnect or fail gracefully
     }
+};
+
+if (process.env.MONGO_URI) {
+    connectDB();
+} else {
+    console.warn('[MongoDB] WARN: MONGO_URI is not defined in .env');
 }
 
-const db = Datastore.create({ filename: dbPath, autoload: true });
+// --- Schema Definition ---
+const certificateSchema = new mongoose.Schema({
+    certId: { type: String, required: true, unique: true },
+    candidateName: { type: String, required: true },
+    email: { type: String, required: true },
+    position: { type: String, required: true },
+    hours: { type: String, required: true },
+    startDate: { type: String, required: true },
+    endDate: { type: String, required: true },
+    issueDate: { type: String, required: true },
+    cloudinaryUrl: { type: String, required: true },
+    valid: { type: Boolean, default: true }
+}, { timestamps: true });
 
-console.log('Connected to NeDB database at', dbPath);
+const CertificateModel = mongoose.model('Certificate', certificateSchema);
 
-// --- Public API mirroring previous Mongoose Model ---
-
+// --- Public API Wrapper (Maintains compatibility with previous NeDB and Mongoose code) ---
 const Certificate = {
     // Create new certificate
     create: async (data) => {
         try {
             console.log(`[DB] Inserting certificate for: ${data.candidateName} (${data.email})`);
-            // Clone data to avoid mutation
-            const doc = { ...data };
-            // Ensure valid default
-            if (doc.valid === undefined) doc.valid = true;
-
-            const newDoc = await db.insert(doc);
-            console.log(`[DB] Insert success. ID: ${newDoc._id}`);
-            return newDoc;
+            const cert = await CertificateModel.create(data);
+            console.log(`[DB] Insert success. ID: ${cert._id}`);
+            return cert;
         } catch (error) {
             console.error(`[DB] Insert FAILED for ${data.email}:`, error);
             throw error;
@@ -45,28 +50,27 @@ const Certificate = {
 
     // Find one by query
     findOne: async (query) => {
-        return await db.findOne(query);
+        return await CertificateModel.findOne(query);
     },
 
-    // Update by ID
+    // Update by ID (Note: Using MongoDB syntax)
     updateOne: async (query, updates) => {
-        const numAffected = await db.update(query, { $set: updates }, { multi: false });
-        return { matchedCount: numAffected };
+        // Mongoose updateOne returns { matchedCount, modifiedCount, ... }
+        return await CertificateModel.updateOne(query, updates);
     },
 
     // Delete by ID
     deleteOne: async (query) => {
-        const numRemoved = await db.remove(query, { multi: false });
-        return { deletedCount: numRemoved };
+        return await CertificateModel.deleteOne(query);
     },
 
     // List all (Admin Registry)
     find: async () => {
-        return await db.find({}).sort({ issueDate: -1 }); // Simple sort
+        return await CertificateModel.find({}).sort({ issueDate: -1 });
     }
 };
 
 module.exports = {
-    db, // raw access if needed
+    connectDB,
     Certificate
 };
