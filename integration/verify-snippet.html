@@ -30,11 +30,6 @@
         #hf-verification-app button:hover {
             background-color: #218838 !important;
         }
-
-        /* Hover effect for the download link */
-        #hf-download:hover {
-            text-decoration: underline !important;
-        }
     </style>
 </head>
 
@@ -118,7 +113,7 @@
                                 const dateStr = data.issueDate || "";
                                 document.getElementById('hf-date').innerText = dateStr.split('T')[0]; // Simple formatting
 
-                                // document.getElementById('hf-download').href = data.cloudinaryUrl; // Removed
+
                                 details.style.display = 'block';
                             } else {
                                 throw new Error(data.message || "Invalid Certificate");
