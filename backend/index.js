@@ -1,9 +1,10 @@
 require('dotenv').config();
 const express = require('express');
 const { Resend } = require('resend');
+const cors = require('cors');
 
 const cloudinary = require('cloudinary').v2;
-const cloudinary = require('cloudinary').v2;
+
 const fs = require('fs');
 const path = require('path');
 
