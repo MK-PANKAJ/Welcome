@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Certificate</title>
+</head>
+<body>
+    
+    <!-- COPY FROM HERE -->
+    <div id="verification-app" style="max-width: 600px; margin: 50px auto; font-family: sans-serif; text-align: center;">
+    
+        <div id="search-box">
+            <h2>Certificate Verification</h2>
+            <input type="text" id="cert-input" placeholder="Enter Certificate ID (e.g., HF-X92)" style="padding: 10px; width: 60%; border: 1px solid #ccc; border-radius: 4px;">
+            <button onclick="manualSearch()" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Verify</button>
+        </div>
+    
+        <div id="loader" style="display: none; margin-top: 20px;">
+            <p>Verifying with blockchain database...</p>
+        </div>
+    
+        <div id="result-card" style="display: none; margin-top: 30px; border: 1px solid #eee; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 8px;">
+            <h3 id="status-icon" style="font-size: 24px; margin-bottom: 10px;"></h3>
+            <p><strong>Name:</strong> <span id="r-name"></span></p>
+            <p><strong>Course:</strong> <span id="r-course"></span></p>
+            <p><strong>Date:</strong> <span id="r-date"></span></p>
+            <div style="margin-top: 20px;">
+                <a id="r-download" href="" target="_blank" style="text-decoration: none; background: #007bff; color: white; padding: 8px 15px; border-radius: 4px;">Download Original</a>
+            </div>
+        </div>
+    
+    </div>
+    
+    <script>
+        // Configuration: Your Render Backend URL
+        // CHANGE THIS TO YOUR DEPLOYED URL
+        const API_URL = "http://localhost:8080/api/public/verify/"; 
+    
+        // 1. Check if URL has an ID (QR Code Scan)
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const certId = urlParams.get('id');
+            if (certId) {
+                document.getElementById('cert-input').value = certId;
+                verifyCert(certId);
+            }
+        };
+    
+        // 2. Manual Search Trigger
+        function manualSearch() {
+            const id = document.getElementById('cert-input').value.trim();
+            if(id) verifyCert(id);
+        }
+    
+        // 3. The Verification Logic
+        async function verifyCert(id) {
+            // UI Updates
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('result-card').style.display = 'none';
+    
+            try {
+                const response = await fetch(API_URL + id);
+                const data = await response.json();
+                
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('result-card').style.display = 'block';
+    
+                if (data.valid) {
+                    // SUCCESS
+                    document.getElementById('result-card').style.borderTop = "5px solid #28a745";
+                    document.getElementById('status-icon').innerHTML = "✅ Verified Authentic";
+                    document.getElementById('status-icon').style.color = "#28a745";
+                    
+                    document.getElementById('r-name').innerText = data.candidateName;
+                    document.getElementById('r-course').innerText = data.courseName;
+                    document.getElementById('r-date').innerText = data.issueDate;
+                    document.getElementById('r-download').href = data.cloudinaryUrl;
+                    document.getElementById('r-download').style.display = "inline-block";
+                } else {
+                    // FAILED / REVOKED
+                    throw new Error(data.message || "Invalid Certificate");
+                }
+    
+            } catch (error) {
+                // ERROR HANDLING
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('result-card').style.display = 'block';
+                document.getElementById('result-card').style.borderTop = "5px solid #dc3545";
+                document.getElementById('status-icon').innerHTML = "❌ Verification Failed";
+                document.getElementById('status-icon').style.color = "#dc3545";
+                document.getElementById('r-name').innerText = "Record not found or ID is incorrect.";
+                document.getElementById('r-course').innerText = "-";
+                document.getElementById('r-date').innerText = "-";
+                document.getElementById('r-download').style.display = "none";
+            }
+        }
+    </script>
+    <!-- END COPY -->
+
+</body>
+</html>
