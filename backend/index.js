@@ -16,7 +16,7 @@ app.use(express.json());
 // Allow Admin Portal, Main Website, and Localhost
 // Plus any extra origins defined in env (comma separated)
 const envAllowed = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim().replace(/\/$/, ""))
     : [];
 
 const allowedOrigins = [
