@@ -7,9 +7,15 @@ const dbPath = path.join(dbDir, 'certificates.db');
 
 // Ensure directory exists if using persistent path
 const fs = require('fs');
-if (process.env.PERSISTENT_STORAGE_PATH && !fs.existsSync(dbDir)) {
-    console.log(`Creating persistent directory: ${dbDir}`);
-    fs.mkdirSync(dbDir, { recursive: true });
+if (process.env.PERSISTENT_STORAGE_PATH) {
+    try {
+        if (!fs.existsSync(dbDir)) {
+            console.log(`Creating persistent directory: ${dbDir}`);
+            fs.mkdirSync(dbDir, { recursive: true });
+        }
+    } catch (err) {
+        console.warn(`[WARNING] Could not create directory ${dbDir}. If this is a mounted disk, this is likely fine. Error: ${err.message}`);
+    }
 }
 
 const db = Datastore.create({ filename: dbPath, autoload: true });
