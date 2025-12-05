@@ -4,107 +4,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verify Certificate</title>
+    <title>Certificate Verification</title>
+    <style>
+        /* Basic Page Reset & Layout */
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        /* Enhancing the user's inline styles slightly for the demo page */
+        #hf-verification-app {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        /* Hover effect for the verify button */
+        #hf-verification-app button:hover {
+            background-color: #218838 !important;
+        }
+
+        /* Hover effect for the download link */
+        #hf-download:hover {
+            text-decoration: underline !important;
+        }
+    </style>
 </head>
 
 <body>
 
-    <!-- COPY FROM HERE -->
-    <div id="verification-app"
-        style="max-width: 600px; margin: 50px auto; font-family: sans-serif; text-align: center;">
-
-        <div id="search-box">
-            <h2>Certificate Verification</h2>
-            <input type="text" id="cert-input" placeholder="Enter Certificate ID (e.g., HF-X92)"
-                style="padding: 10px; width: 60%; border: 1px solid #ccc; border-radius: 4px;">
-            <button onclick="manualSearch()"
-                style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Verify</button>
-        </div>
-
-        <div id="loader" style="display: none; margin-top: 20px;">
-            <p>Verifying with blockchain database...</p>
-        </div>
-
-        <div id="result-card"
-            style="display: none; margin-top: 30px; border: 1px solid #eee; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 8px;">
-            <h3 id="status-icon" style="font-size: 24px; margin-bottom: 10px;"></h3>
-            <p><strong>Name:</strong> <span id="r-name"></span></p>
-            <p><strong>Course:</strong> <span id="r-course"></span></p>
-            <p><strong>Date:</strong> <span id="r-date"></span></p>
-            <div style="margin-top: 20px;">
-                <a id="r-download" href="" target="_blank"
-                    style="text-decoration: none; background: #007bff; color: white; padding: 8px 15px; border-radius: 4px;">Download
-                    Original</a>
+    <!-- BEGIN: Verification Widget Code -->
+    <div id="hf-verification-app" style="width: 100%; max-width: 600px; margin: 0 auto; font-family: sans-serif;">
+        <div id="hf-search-box" style="text-align: center;">
+            <h3 style="margin-top: 0; color: #333;">Verify Certificate</h3>
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <input type="text" id="hf-cert-input" placeholder="Certificate ID (e.g., HF-2024-1234)"
+                    style="padding: 10px; flex: 1; min-width: 200px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px;">
+                <button onclick="hfVerifyCert()"
+                    style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; transition: background 0.2s;">
+                    Verify
+                </button>
             </div>
         </div>
 
+        <!-- Results Container -->
+        <div id="hf-result-card"
+            style="display: none; margin-top: 20px; border: 1px solid #eee; padding: 20px; border-radius: 8px; background: #fdfdfd; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+            <div id="hf-status-message"
+                style="font-weight: bold; font-size: 18px; margin-bottom: 15px; text-align: center;"></div>
+            <div id="hf-cert-details" style="display: none; line-height: 1.6; color: #444;">
+                <p style="margin: 8px 0; border-bottom: 1px solid #eee; padding-bottom: 8px;">
+                    <strong style="color: #333;">Name:</strong> <span id="hf-name" style="float: right;"></span>
+                </p>
+                <p style="margin: 8px 0; border-bottom: 1px solid #eee; padding-bottom: 8px;">
+                    <strong style="color: #333;">Course:</strong> <span id="hf-course" style="float: right;"></span>
+                </p>
+                <p style="margin: 8px 0; border-bottom: 1px solid #eee; padding-bottom: 8px;">
+                    <strong style="color: #333;">Date:</strong> <span id="hf-date" style="float: right;"></span>
+                </p>
+                <div style="text-align: center; margin-top: 20px;">
+                    <a id="hf-download" href="#" target="_blank"
+                        style="display: inline-block; text-decoration: none; color: white; background-color: #007bff; padding: 8px 16px; border-radius: 4px; font-size: 14px;">
+                        Download Original Certificate &rarr;
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
-        // Configuration: Your Render Backend URL
-        // CHANGE THIS TO YOUR DEPLOYED URL
-        const API_URL = "https://certificate-verification-woce.onrender.com/api/public/verify/";
+        (function () {
+            // CONFIGURATION
+            // Ensure this matches your deployed backend URL
+            const API_BASE = "https://certificate-verification-woce.onrender.com/api/public/verify/";
 
-        // 1. Check if URL has an ID (QR Code Scan)
-        window.onload = function () {
-            const urlParams = new URLSearchParams(window.location.search);
-            const certId = urlParams.get('id');
-            if (certId) {
-                document.getElementById('cert-input').value = certId;
-                verifyCert(certId);
-            }
-        };
+            window.hfVerifyCert = async function () {
+                const input = document.getElementById('hf-cert-input');
+                const resultCard = document.getElementById('hf-result-card');
+                const statusMsg = document.getElementById('hf-status-message');
+                const details = document.getElementById('hf-cert-details');
+                const id = input.value.trim();
 
-        // 2. Manual Search Trigger
-        function manualSearch() {
-            const id = document.getElementById('cert-input').value.trim();
-            if (id) verifyCert(id);
-        }
-
-        // 3. The Verification Logic
-        async function verifyCert(id) {
-            // UI Updates
-            document.getElementById('loader').style.display = 'block';
-            document.getElementById('result-card').style.display = 'none';
-
-            try {
-                const response = await fetch(API_URL + id);
-                const data = await response.json();
-
-                document.getElementById('loader').style.display = 'none';
-                document.getElementById('result-card').style.display = 'block';
-
-                if (data.valid) {
-                    // SUCCESS
-                    document.getElementById('result-card').style.borderTop = "5px solid #28a745";
-                    document.getElementById('status-icon').innerHTML = "✅ Verified Authentic";
-                    document.getElementById('status-icon').style.color = "#28a745";
-
-                    document.getElementById('r-name').innerText = data.candidateName;
-                    document.getElementById('r-course').innerText = data.position; // Backend sends 'position'
-                    document.getElementById('r-date').innerText = data.issueDate;
-                    document.getElementById('r-download').href = data.cloudinaryUrl;
-                    document.getElementById('r-download').style.display = "inline-block";
-                } else {
-                    // FAILED / REVOKED
-                    throw new Error(data.message || "Invalid Certificate");
+                if (!id) {
+                    alert("Please enter a Certificate ID");
+                    return;
                 }
 
-            } catch (error) {
-                // ERROR HANDLING
-                document.getElementById('loader').style.display = 'none';
-                document.getElementById('result-card').style.display = 'block';
-                document.getElementById('result-card').style.borderTop = "5px solid #dc3545";
-                document.getElementById('status-icon').innerHTML = "❌ Verification Failed";
-                document.getElementById('status-icon').style.color = "#dc3545";
-                document.getElementById('r-name').innerText = "Record not found or ID is incorrect.";
-                document.getElementById('r-course').innerText = "-";
-                document.getElementById('r-date').innerText = "-";
-                document.getElementById('r-download').style.display = "none";
-            }
-        }
+                // Reset UI
+                resultCard.style.display = 'block';
+                statusMsg.innerText = "Verifying...";
+                statusMsg.style.color = "#666";
+                details.style.display = 'none';
+
+                try {
+                    const response = await fetch(API_BASE + id);
+                    const data = await response.json();
+
+                    if (data.valid) {
+                        statusMsg.innerHTML = "✅ Verified Authentic";
+                        statusMsg.style.color = "#28a745";
+
+                        // Update fields
+                        document.getElementById('hf-name').innerText = data.candidateName || "N/A";
+                        document.getElementById('hf-course').innerText = data.position || "N/A";
+
+                        // Handle Date formatting if string is provided
+                        const dateStr = data.issueDate || "";
+                        document.getElementById('hf-date').innerText = dateStr.split('T')[0]; // Simple formatting
+
+                        document.getElementById('hf-download').href = data.cloudinaryUrl;
+                        details.style.display = 'block';
+                    } else {
+                        throw new Error(data.message || "Invalid Certificate");
+                    }
+                } catch (error) {
+                    console.error(error);
+                    statusMsg.innerHTML = "❌ Verification Failed";
+                    statusMsg.style.color = "#dc3545";
+
+                    // Optional: Show specific error message
+                    if (error.message && error.message !== "Invalid Certificate") {
+                        const errorDetail = document.createElement('div');
+                        errorDetail.style.fontSize = "12px";
+                        errorDetail.style.marginTop = "5px";
+                        errorDetail.innerText = "Certificate ID not found or invalid.";
+                        statusMsg.appendChild(errorDetail);
+                    }
+
+                    details.style.display = 'none';
+                }
+            };
+
+            // Allow pressing "Enter" key to verify
+            document.getElementById('hf-cert-input').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    window.hfVerifyCert();
+                }
+            });
+        })();
     </script>
-    <!-- END COPY -->
+    <!-- END: Verification Widget Code -->
 
 </body>
 

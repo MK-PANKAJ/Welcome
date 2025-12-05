@@ -24,15 +24,15 @@ const allowedOrigins = [
     'https://www.highfurries.com',
     'http://localhost:3000',
     'http://localhost:5173', // Vite dev
-    'https://mk-pankaj.github.io/verify',
+    'https://mk-pankaj.github.io', // GitHub Pages deployment
     ...envAllowed,
     undefined // Handle non-browser tools (like Postman)
 ];
 
 app.use(cors({
     origin: function (origin, callback) {
-        // 1. Allow mobile apps / tools (no origin header)
-        if (!origin) return callback(null, true);
+        // 1. Allow mobile apps / tools (no origin header) or local file testing (origin="null")
+        if (!origin || origin === 'null') return callback(null, true);
 
         // 2. Strict Whitelist Check
         if (allowedOrigins.includes(origin)) {
