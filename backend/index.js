@@ -207,6 +207,8 @@ app.get('/api/public/verify/:id', async (req, res) => {
             valid: true,
             candidateName: cert.candidateName,
             position: cert.position,
+            hours: cert.hours,
+            issueDate: cert.issueDate,
             startDate: cert.startDate,
             endDate: cert.endDate,
             cloudinaryUrl: cert.cloudinaryUrl
@@ -233,6 +235,144 @@ app.post('/api/admin/revoke/:id', async (req, res) => {
     try {
         const { id } = req.params;
         await Certificate.updateOne({ certId: id }, { valid: false });
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// 6. Generate Single Reference Helpers for Logic Reuse would be better but keeping it self-contained for now
+app.post('/api/admin/generate-single', async (req, res) => {
+    const { name, hours, position, startDate, endDate, email } = req.body;
+
+    if (!name || !email) {
+        return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+
+    try {
+        // A. Generate ID
+        const certId = `HF-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+        // B. Generate QR
+        const verificationURL = `https://www.highfurries.com/verify?id=${certId}`;
+        const qrDataUrl = await QRCode.toDataURL(verificationURL);
+
+        // C. Create Certificate Image
+        const templatePath = path.join(__dirname, 'template.jpg');
+        let templateImage;
+        try {
+            templateImage = await loadImage(templatePath);
+        } catch (e) {
+            throw new Error("Template image not found on server");
+        }
+
+        const canvas = createCanvas(templateImage.width, templateImage.height);
+        const ctx = canvas.getContext('2d');
+
+        // Draw Template
+        ctx.drawImage(templateImage, 0, 0);
+
+        // Text Configuration
+        ctx.fillStyle = '#000';
+        ctx.textAlign = 'center';
+
+        // 1. Candidate Name (Center, Big)
+        ctx.font = 'bold 80px Arial';
+        ctx.fillText(name, canvas.width / 2, canvas.height / 2 - 50);
+
+        // Font for details
+        ctx.font = '50px Arial';
+
+        // 2. Hours 
+        ctx.fillText(hours, canvas.width / 2 - 200, canvas.height / 2 + 100);
+
+        // 3. Position 
+        ctx.fillText(position, canvas.width / 2 + 400, canvas.height / 2 + 100);
+
+        // 4. From Date
+        ctx.fillText(startDate, canvas.width / 2 - 150, canvas.height / 2 + 250);
+
+        // 5. To Date
+        ctx.fillText(endDate, canvas.width / 2 + 250, canvas.height / 2 + 250);
+
+        // ID
+        ctx.font = '30px Arial';
+        ctx.textAlign = 'right';
+        ctx.fillText(`ID: ${certId}`, canvas.width - 50, 60);
+
+        // Draw QR Code
+        const qrImage = await loadImage(qrDataUrl);
+        ctx.drawImage(qrImage, 50, canvas.height - 250, 200, 200);
+
+        // D. Upload to Cloudinary
+        const buffer = canvas.toBuffer('image/png');
+        let imageUrl = 'https://placehold.co/600x400';
+
+        if (process.env.CLOUDINARY_CLOUD_NAME) {
+            await new Promise((resolve, reject) => {
+                const uploadStream = cloudinary.uploader.upload_stream(
+                    { folder: 'certificates' },
+                    (error, result) => {
+                        if (error) reject(error);
+                        else resolve(result);
+                    }
+                );
+                uploadStream.end(buffer);
+            }).then(r => imageUrl = r.secure_url).catch(e => console.error(e));
+        }
+
+        // E. Save to DB
+        const newCert = await Certificate.create({
+            certId,
+            candidateName: name,
+            position,
+            hours,
+            startDate,
+            endDate,
+            email,
+            issueDate: new Date().toLocaleDateString(),
+            cloudinaryUrl: imageUrl
+        });
+
+        res.json({ success: true, certificate: newCert });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// 7. Update Certificate
+app.put('/api/admin/update/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updates = req.body; // Expecting object with fields to update
+
+        // Exclude immutable fields if necessary, but for admin portal assume trust
+        // Note: This does NOT regenerate the image. It only updates the DB record.
+
+        const result = await Certificate.updateOne({ certId: id }, updates);
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ success: false, message: 'Certificate not found' });
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// 8. Delete Certificate
+app.delete('/api/admin/delete/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await Certificate.deleteOne({ certId: id });
+
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ success: false, message: 'Certificate not found' });
+        }
+
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server error' });

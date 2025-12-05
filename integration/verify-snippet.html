@@ -81,7 +81,7 @@
                     document.getElementById('status-icon').style.color = "#28a745";
 
                     document.getElementById('r-name').innerText = data.candidateName;
-                    document.getElementById('r-course').innerText = data.courseName;
+                    document.getElementById('r-course').innerText = data.position; // Backend sends 'position'
                     document.getElementById('r-date').innerText = data.issueDate;
                     document.getElementById('r-download').href = data.cloudinaryUrl;
                     document.getElementById('r-download').style.display = "inline-block";
