@@ -25,18 +25,11 @@ const allowedOrigins = [
 app.use(cors({
     origin: function (origin, callback) {
         if (!origin || allowedOrigins.some(o => origin.startsWith(o) || o === origin)) {
-            // Using startsWith for subdomains or matching exactly often safer, but prompt was specific.
-            // The prompt used indexOf. I will stick to the prompt's logic or close to it but slightly more robust for localhost.
-            // Actually simpler:
             if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
                 callback(null, true);
             } else {
-                // Allow localhost regex or just stick to prompt list? 
-                // Prompt list was specific. I will stick to the prompt's exact logic + undefined check.
                 if (allowedOrigins.includes(origin)) return callback(null, true);
-                // Graceful fallback for dev
                 if (process.env.NODE_ENV !== 'production') return callback(null, true);
-
                 callback(new Error('Not allowed by CORS'));
             }
         } else {
@@ -53,19 +46,20 @@ cloudinary.config({
 });
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/highfurries', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-}).then(() => console.log('MongoDB Connected'))
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/highfurries')
+    .then(() => console.log('MongoDB Connected'))
     .catch(err => console.error('MongoDB Error:', err));
 
 // Mongoose Model
 const CertificateSchema = new mongoose.Schema({
     certId: { type: String, required: true, unique: true },
     candidateName: String,
-    courseName: String,
+    position: String,
+    hours: String,
+    startDate: String,
+    endDate: String,
     email: String,
-    issueDate: String,
+    issueDate: String, // Keep for record
     cloudinaryUrl: String,
     valid: { type: Boolean, default: true }
 });
@@ -85,7 +79,7 @@ app.post('/api/admin/login', (req, res) => {
 
 // 2. Generate Bulk (The Core Logic)
 app.post('/api/admin/generate-bulk', async (req, res) => {
-    // Expecting array of students: [{ name, course, email, date }]
+    // Expecting array of students: [{ name, hours, position, startDate, endDate, email }]
     const { students } = req.body;
 
     // Safety check
@@ -106,68 +100,60 @@ app.post('/api/admin/generate-bulk', async (req, res) => {
             const qrDataUrl = await QRCode.toDataURL(verificationURL);
 
             // C. Create Certificate Image
-            // We need a template. For now, we will create a canvas.
-            const width = 1200;
-            const height = 800;
-            const canvas = createCanvas(width, height);
+            // Ensure template.jpg exists in current directory or handle error
+            const templatePath = path.join(__dirname, 'template.jpg');
+            let templateImage;
+            try {
+                templateImage = await loadImage(templatePath);
+            } catch (e) {
+                console.error("Template not found, using blank", e);
+                // Fallback or error? For now error to force fix
+                throw new Error("Template image not found on server");
+            }
+
+            const canvas = createCanvas(templateImage.width, templateImage.height);
             const ctx = canvas.getContext('2d');
 
-            // White Background
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(0, 0, width, height);
+            // Draw Template
+            ctx.drawImage(templateImage, 0, 0);
 
-            // Border
-            ctx.strokeStyle = '#D4AF37'; // Gold
-            ctx.lineWidth = 20;
-            ctx.strokeRect(40, 40, width - 80, height - 80);
-
-            // Text
-            ctx.fillStyle = '#333';
+            // Text Configuration
+            ctx.fillStyle = '#000';
             ctx.textAlign = 'center';
 
-            ctx.font = 'bold 60px "Times New Roman"';
-            ctx.fillText('Certificate of Completion', width / 2, 200);
+            // 1. Candidate Name (Center, Big)
+            ctx.font = 'bold 80px Arial';
+            ctx.fillText(student.name, canvas.width / 2, canvas.height / 2 - 50);
 
-            ctx.font = '40px Arial';
-            ctx.fillText('This is to certify that', width / 2, 300);
+            // Font for details
+            ctx.font = '50px Arial';
 
-            ctx.font = 'bold 70px "Times New Roman"';
-            ctx.fillStyle = '#000';
-            ctx.fillText(student.name, width / 2, 400);
+            // 2. Hours 
+            ctx.fillText(student.hours, canvas.width / 2 - 200, canvas.height / 2 + 100);
 
-            ctx.fillStyle = '#333';
-            ctx.font = '40px Arial';
-            ctx.fillText('Has successfully completed the course:', width / 2, 500);
+            // 3. Position 
+            ctx.fillText(student.position, canvas.width / 2 + 400, canvas.height / 2 + 100);
 
-            ctx.font = 'bold 50px Arial';
-            ctx.fillText(student.course, width / 2, 580);
+            // 4. From Date
+            ctx.fillText(student.startDate, canvas.width / 2 - 150, canvas.height / 2 + 250);
 
+            // 5. To Date
+            ctx.fillText(student.endDate, canvas.width / 2 + 250, canvas.height / 2 + 250);
+
+            // ID
             ctx.font = '30px Arial';
-            ctx.fillText(`Date: ${student.date}`, width / 2, 680);
-            ctx.fillText(`ID: ${certId}`, width / 2, 720);
+            ctx.textAlign = 'right';
+            ctx.fillText(`ID: ${certId}`, canvas.width - 50, 60);
 
             // Draw QR Code
             const qrImage = await loadImage(qrDataUrl);
-            ctx.drawImage(qrImage, 50, height - 250, 200, 200);
+            ctx.drawImage(qrImage, 50, canvas.height - 250, 200, 200);
 
             // D. Upload to Cloudinary
-            // In a real app, buffer -> stream -> cloudinary
-            // Simplified: Save temp file OR use uploader stream. 
-            // We'll use a direct buffer upload function helper for simplicity if possible, 
-            // or just mock it if credentials aren't real yet. 
-            // But let's try to write the logic.
-
-            // For this scratchpad environment without real keys, we might fail uploading.
-            // I will mock the Cloudinary return if keys are missing in env logic, 
-            // but write the real code for the user.
-
-            // Convert canvas to buffer
             const buffer = canvas.toBuffer('image/png');
-
-            // Upload logic (Mocked for safety if no env, but structure is here)
             let imageUrl = 'https://placehold.co/600x400';
+
             if (process.env.CLOUDINARY_CLOUD_NAME) {
-                // Real upload logic would go here using streamifier or writing to tmp
                 await new Promise((resolve, reject) => {
                     const uploadStream = cloudinary.uploader.upload_stream(
                         { folder: 'certificates' },
@@ -184,14 +170,14 @@ app.post('/api/admin/generate-bulk', async (req, res) => {
             const newCert = await Certificate.create({
                 certId,
                 candidateName: student.name,
-                courseName: student.course,
+                position: student.position,
+                hours: student.hours,
+                startDate: student.startDate,
+                endDate: student.endDate,
                 email: student.email,
-                issueDate: student.date,
+                issueDate: new Date().toLocaleDateString(),
                 cloudinaryUrl: imageUrl
             });
-
-            // F. Send Email (Nodemailer)
-            // if (process.env.EMAIL_USER) { ... }
 
             results.push({ email: student.email, status: 'success', certId });
 
@@ -220,8 +206,9 @@ app.get('/api/public/verify/:id', async (req, res) => {
         res.json({
             valid: true,
             candidateName: cert.candidateName,
-            courseName: cert.courseName,
-            issueDate: cert.issueDate,
+            position: cert.position,
+            startDate: cert.startDate,
+            endDate: cert.endDate,
             cloudinaryUrl: cert.cloudinaryUrl
         });
 
