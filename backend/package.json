@@ -18,6 +18,7 @@
     "mongoose": "^9.0.1",
     "nodemailer": "^6.9.7",
     "pureimage": "^0.3.17",
-    "qrcode": "^1.5.3"
+    "qrcode": "^1.5.3",
+    "resend": "^6.5.2"
   }
 }

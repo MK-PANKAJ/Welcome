@@ -3,6 +3,7 @@ const express = require('express');
 // const mongoose = require('mongoose'); // Removed for SQLite migration
 const cors = require('cors');
 const QRCode = require('qrcode');
+const { Resend } = require('resend');
 
 const cloudinary = require('cloudinary').v2;
 const nodemailer = require('nodemailer');
@@ -89,28 +90,57 @@ const createTransporter = () => {
 
 const transporter = createTransporter();
 
+// Initialize Resend
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+
 const sendCertEmail = async (toEmail, name, cloudinaryUrl) => {
+    const htmlContent = `
+        <h3>Congratulations, ${name}!</h3>
+        <p>We are pleased to present your certificate of completion.</p>
+        <p>You can view and download your certificate here:</p>
+        <a href="${cloudinaryUrl}" style="padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px;">View Certificate</a>
+        <p>Or verify it by scanning the QR code on the certificate.</p>
+        <br>
+        <p>Best regards,<br>High Furries Team</p>
+    `;
+
+    // OPTION A: Use Resend (HTTP API) - Recommended for Render
+    if (resend) {
+        try {
+            const data = await resend.emails.send({
+                from: 'High Furries System <onboarding@resend.dev>', // Default Resend testing domain
+                to: [toEmail], // Resend expects an array
+                subject: 'Your High Furries Certificate',
+                html: htmlContent
+            });
+
+            if (data.error) {
+                console.error('Resend API Error:', data.error);
+                return { success: false, error: data.error.message };
+            }
+
+            console.log(`[Resend] Email sent to ${toEmail}. ID: ${data.data.id}`);
+            return { success: true };
+        } catch (error) {
+            console.error('[Resend] Exception:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // OPTION B: Use Nodemailer (SMTP) - Fallback
     const mailOptions = {
         from: process.env.EMAIL_USER,
         to: toEmail,
         subject: 'Your High Furries Certificate',
-        html: `
-            <h3>Congratulations, ${name}!</h3>
-            <p>We are pleased to present your certificate of completion.</p>
-            <p>You can view and download your certificate here:</p>
-            <a href="${cloudinaryUrl}" style="padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px;">View Certificate</a>
-            <p>Or verify it by scanning the QR code on the certificate.</p>
-            <br>
-            <p>Best regards,<br>High Furries Team</p>
-        `
+        html: htmlContent
     };
 
     try {
         await transporter.sendMail(mailOptions);
-        console.log(`Email sent to ${toEmail}`);
+        console.log(`[SMTP] Email sent to ${toEmail}`);
         return { success: true };
     } catch (error) {
-        console.error(`Error sending email to ${toEmail}:`, error);
+        console.error(`[SMTP] Error sending email to ${toEmail}:`, error);
         return { success: false, error: error.message };
     }
 };
