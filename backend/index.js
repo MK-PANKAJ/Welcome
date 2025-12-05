@@ -317,7 +317,7 @@ app.post('/api/public/resend-email/:id', async (req, res) => {
 app.get('/api/admin/registry', async (req, res) => {
     // In real app, verify admin-token here
     try {
-        const certs = await Certificate.find().sort({ _id: -1 }); // Newest first
+        const certs = await Certificate.find(); // Already sorted in database.js
         console.log(`[Registry] Found ${certs.length} certificates.`);
         res.json({ success: true, certificates: certs });
     } catch (error) {

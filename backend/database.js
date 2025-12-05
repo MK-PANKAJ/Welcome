@@ -21,12 +21,20 @@ console.log('Connected to NeDB database at', dbPath);
 const Certificate = {
     // Create new certificate
     create: async (data) => {
-        // Clone data to avoid mutation
-        const doc = { ...data };
-        // Ensure valid default
-        if (doc.valid === undefined) doc.valid = true;
+        try {
+            console.log(`[DB] Inserting certificate for: ${data.candidateName} (${data.email})`);
+            // Clone data to avoid mutation
+            const doc = { ...data };
+            // Ensure valid default
+            if (doc.valid === undefined) doc.valid = true;
 
-        return await db.insert(doc);
+            const newDoc = await db.insert(doc);
+            console.log(`[DB] Insert success. ID: ${newDoc._id}`);
+            return newDoc;
+        } catch (error) {
+            console.error(`[DB] Insert FAILED for ${data.email}:`, error);
+            throw error;
+        }
     },
 
     // Find one by query
