@@ -14,11 +14,17 @@ app.use(express.json());
 
 // --- Configuration ---
 // Allow Admin Portal, Main Website, and Localhost
+// Plus any extra origins defined in env (comma separated)
+const envAllowed = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+    : [];
+
 const allowedOrigins = [
     'https://welcome-chi-three.vercel.app',
     'https://www.highfurries.com',
     'http://localhost:3000',
     'http://localhost:5173', // Vite dev
+    ...envAllowed,
     undefined // Handle non-browser tools (like Postman)
 ];
 
@@ -64,6 +70,42 @@ const CertificateSchema = new mongoose.Schema({
     valid: { type: Boolean, default: true }
 });
 const Certificate = mongoose.model('Certificate', CertificateSchema);
+
+
+// --- Email Configuration ---
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    }
+});
+
+const sendCertEmail = async (toEmail, name, cloudinaryUrl) => {
+    const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: toEmail,
+        subject: 'Your High Furries Certificate',
+        html: `
+            <h3>Congratulations, ${name}!</h3>
+            <p>We are pleased to present your certificate of completion.</p>
+            <p>You can view and download your certificate here:</p>
+            <a href="${cloudinaryUrl}" style="padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px;">View Certificate</a>
+            <p>Or verify it by scanning the QR code on the certificate.</p>
+            <br>
+            <p>Best regards,<br>High Furries Team</p>
+        `
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log(`Email sent to ${toEmail}`);
+        return true;
+    } catch (error) {
+        console.error(`Error sending email to ${toEmail}:`, error);
+        return false;
+    }
+};
 
 
 // --- Routes ---
@@ -178,6 +220,9 @@ app.post('/api/admin/generate-bulk', async (req, res) => {
                 issueDate: new Date().toLocaleDateString(),
                 cloudinaryUrl: imageUrl
             });
+
+            // F. Send Email
+            await sendCertEmail(student.email, student.name, imageUrl);
 
             results.push({ email: student.email, status: 'success', certId });
 
@@ -333,6 +378,9 @@ app.post('/api/admin/generate-single', async (req, res) => {
             issueDate: new Date().toLocaleDateString(),
             cloudinaryUrl: imageUrl
         });
+
+        // F. Send Email
+        await sendCertEmail(email, name, imageUrl);
 
         res.json({ success: true, certificate: newCert });
 

@@ -296,6 +296,7 @@ export default function Dashboard() {
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{cert.position}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{cert.issueDate}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                                    <a href={cert.cloudinaryUrl} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:text-green-900 inline-block">Download</a>
                                                     <button onClick={() => handleEditClick(cert)} className="text-indigo-600 hover:text-indigo-900">Edit</button>
                                                     <button onClick={() => handleDelete(cert.certId)} className="text-red-600 hover:text-red-900">Delete</button>
                                                 </td>
