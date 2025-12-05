@@ -24,6 +24,7 @@ const allowedOrigins = [
     'https://www.highfurries.com',
     'http://localhost:3000',
     'http://localhost:5173', // Vite dev
+    'https://mk-pankaj.github.io/verify',
     ...envAllowed,
     undefined // Handle non-browser tools (like Postman)
 ];
