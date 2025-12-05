@@ -30,16 +30,16 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: function (origin, callback) {
-        if (!origin || allowedOrigins.some(o => origin.startsWith(o) || o === origin)) {
-            if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
-                callback(null, true);
-            } else {
-                if (allowedOrigins.includes(origin)) return callback(null, true);
-                if (process.env.NODE_ENV !== 'production') return callback(null, true);
-                callback(new Error('Not allowed by CORS'));
-            }
+        // 1. Allow mobile apps / tools (no origin header)
+        if (!origin) return callback(null, true);
+
+        // 2. Strict Whitelist Check
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
         } else {
-            callback(new Error('Not allowed by CORS'));
+            // 3. Log the failure for debugging
+            console.error(`[CORS BLOCK] Origin '${origin}' is not allowed. Whitelisted:`, allowedOrigins);
+            return callback(new Error('Not allowed by CORS'));
         }
     }
 }));
