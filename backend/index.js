@@ -68,7 +68,8 @@ const apiKeys = process.env.RESEND_API_KEYS
 
 if (apiKeys.length > 0) {
     resendClients = apiKeys.map(key => new Resend(key));
-    console.log(`[Email] Configured ${resendClients.length} Resend API Key(s) for load balancing.`);
+    console.log(`[Email] Configured ${resendClients.length} Resend API Key(s):`);
+    apiKeys.forEach((k, i) => console.log(`   Key ${i + 1}: ${k.substring(0, 5)}...${k.substring(k.length - 3)}`));
 }
 
 // Simple Round-Robin Counter
