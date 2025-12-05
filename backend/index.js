@@ -1,12 +1,9 @@
 require('dotenv').config();
 const express = require('express');
-// const mongoose = require('mongoose'); // Removed for SQLite migration
-const cors = require('cors');
-const QRCode = require('qrcode');
 const { Resend } = require('resend');
 
 const cloudinary = require('cloudinary').v2;
-const nodemailer = require('nodemailer');
+const cloudinary = require('cloudinary').v2;
 const fs = require('fs');
 const path = require('path');
 
@@ -56,42 +53,31 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// MongoDB Connection REMOVED - using SQLite via local file certificates.db
-// Mongoose Model REMOVED - using ./database.js
+
 
 
 // --- Email Configuration ---
-// --- Email Configuration ---
-// Prioritize explicit SMTP settings, fall back to Gmail shorthand if only USER/PASS present
-const createTransporter = () => {
-    if (process.env.SMTP_HOST) {
-        console.log(`[Email] Configuring SMTP: ${process.env.SMTP_HOST}:${process.env.SMTP_PORT || 587} (Secure: ${process.env.SMTP_SECURE === 'true'})`);
-        return nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: process.env.SMTP_PORT || 587,
-            secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
-            auth: {
-                user: process.env.SMTP_USER || process.env.EMAIL_USER,
-                pass: process.env.SMTP_PASS || process.env.EMAIL_PASS
-            },
-            connectionTimeout: 30000 // 30 seconds
-        });
-    } else {
-        // Legacy/Simple Gmail support
-        return nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            }
-        });
-    }
+
+
+// Initialize Resend Client Pool
+let resendClients = [];
+const apiKeys = process.env.RESEND_API_KEYS
+    ? process.env.RESEND_API_KEYS.split(',').map(k => k.trim()).filter(k => k)
+    : (process.env.RESEND_API_KEY ? [process.env.RESEND_API_KEY] : []);
+
+if (apiKeys.length > 0) {
+    resendClients = apiKeys.map(key => new Resend(key));
+    console.log(`[Email] Configured ${resendClients.length} Resend API Key(s) for load balancing.`);
+}
+
+// Simple Round-Robin Counter
+let currentKeyIndex = 0;
+const getNextResendClient = () => {
+    if (resendClients.length === 0) return null;
+    const client = resendClients[currentKeyIndex];
+    currentKeyIndex = (currentKeyIndex + 1) % resendClients.length;
+    return client;
 };
-
-const transporter = createTransporter();
-
-// Initialize Resend
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 const sendCertEmail = async (toEmail, name, cloudinaryUrl) => {
     const htmlContent = `
@@ -104,12 +90,13 @@ const sendCertEmail = async (toEmail, name, cloudinaryUrl) => {
         <p>Best regards,<br>High Furries Team</p>
     `;
 
-    // OPTION A: Use Resend (HTTP API) - Recommended for Render
-    if (resend) {
+    // Use Resend (HTTP API) - Rotating Keys
+    const resendClient = getNextResendClient();
+    if (resendClient) {
         try {
-            const data = await resend.emails.send({
+            const data = await resendClient.emails.send({
                 from: 'High Furries System <onboarding@resend.dev>', // Default Resend testing domain
-                to: [toEmail], // Resend expects an array
+                to: [toEmail],
                 subject: 'Your High Furries Certificate',
                 html: htmlContent
             });
@@ -123,25 +110,12 @@ const sendCertEmail = async (toEmail, name, cloudinaryUrl) => {
             return { success: true };
         } catch (error) {
             console.error('[Resend] Exception:', error);
+            // Optional: Could implement recursive retry with next key here
             return { success: false, error: error.message };
         }
-    }
-
-    // OPTION B: Use Nodemailer (SMTP) - Fallback
-    const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: toEmail,
-        subject: 'Your High Furries Certificate',
-        html: htmlContent
-    };
-
-    try {
-        await transporter.sendMail(mailOptions);
-        console.log(`[SMTP] Email sent to ${toEmail}`);
-        return { success: true };
-    } catch (error) {
-        console.error(`[SMTP] Error sending email to ${toEmail}:`, error);
-        return { success: false, error: error.message };
+    } else {
+        console.error('[Email] No Resend API Keys configured.');
+        return { success: false, error: 'Email service not configured' };
     }
 };
 
