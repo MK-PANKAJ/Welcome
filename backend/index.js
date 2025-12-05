@@ -74,13 +74,32 @@ const Certificate = mongoose.model('Certificate', CertificateSchema);
 
 
 // --- Email Configuration ---
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+// --- Email Configuration ---
+// Prioritize explicit SMTP settings, fall back to Gmail shorthand if only USER/PASS present
+const createTransporter = () => {
+    if (process.env.SMTP_HOST) {
+        return nodemailer.createTransport({
+            host: process.env.SMTP_HOST,
+            port: process.env.SMTP_PORT || 587,
+            secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+            auth: {
+                user: process.env.SMTP_USER || process.env.EMAIL_USER,
+                pass: process.env.SMTP_PASS || process.env.EMAIL_PASS
+            }
+        });
+    } else {
+        // Legacy/Simple Gmail support
+        return nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
     }
-});
+};
+
+const transporter = createTransporter();
 
 const sendCertEmail = async (toEmail, name, cloudinaryUrl) => {
     const mailOptions = {
