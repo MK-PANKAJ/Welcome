@@ -60,26 +60,14 @@ cloudinary.config({
 // --- Email Configuration ---
 
 
-// Initialize Resend Client Pool
-let resendClients = [];
-const apiKeys = process.env.RESEND_API_KEYS
-    ? process.env.RESEND_API_KEYS.split(',').map(k => k.trim()).filter(k => k)
-    : (process.env.RESEND_API_KEY ? [process.env.RESEND_API_KEY] : []);
+// Initialize Resend
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
-if (apiKeys.length > 0) {
-    resendClients = apiKeys.map(key => new Resend(key));
-    console.log(`[Email] Configured ${resendClients.length} Resend API Key(s):`);
-    apiKeys.forEach((k, i) => console.log(`   Key ${i + 1}: ${k.substring(0, 5)}...${k.substring(k.length - 3)}`));
+if (resend) {
+    console.log('[Email] Resend API Client Initialized');
+} else {
+    console.warn('[Email] WARN: RESEND_API_KEY is missing');
 }
-
-// Simple Round-Robin Counter
-let currentKeyIndex = 0;
-const getNextResendClient = () => {
-    if (resendClients.length === 0) return null;
-    const client = resendClients[currentKeyIndex];
-    currentKeyIndex = (currentKeyIndex + 1) % resendClients.length;
-    return client;
-};
 
 const sendCertEmail = async (toEmail, name, cloudinaryUrl) => {
     const htmlContent = `
@@ -92,11 +80,10 @@ const sendCertEmail = async (toEmail, name, cloudinaryUrl) => {
         <p>Best regards,<br>High Furries Team</p>
     `;
 
-    // Use Resend (HTTP API) - Rotating Keys
-    const resendClient = getNextResendClient();
-    if (resendClient) {
+    // Use Resend (HTTP API)
+    if (resend) {
         try {
-            const data = await resendClient.emails.send({
+            const data = await resend.emails.send({
                 from: 'High Furries System <onboarding@resend.dev>', // Default Resend testing domain
                 to: [toEmail],
                 subject: 'Your High Furries Certificate',
@@ -112,7 +99,6 @@ const sendCertEmail = async (toEmail, name, cloudinaryUrl) => {
             return { success: true };
         } catch (error) {
             console.error('[Resend] Exception:', error);
-            // Optional: Could implement recursive retry with next key here
             return { success: false, error: error.message };
         }
     } else {
