@@ -15,7 +15,7 @@ app.use(express.json());
 // --- Configuration ---
 // Allow Admin Portal, Main Website, and Localhost
 const allowedOrigins = [
-    'https://admin.highfurries-certs.vercel.app',
+    'https://welcome-chi-three.vercel.app',
     'https://www.highfurries.com',
     'http://localhost:3000',
     'http://localhost:5173', // Vite dev
