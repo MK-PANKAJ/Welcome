@@ -3,7 +3,7 @@ const express = require('express');
 // const mongoose = require('mongoose'); // Removed for SQLite migration
 const cors = require('cors');
 const QRCode = require('qrcode');
-const { createCanvas, loadImage } = require('canvas');
+
 const cloudinary = require('cloudinary').v2;
 const nodemailer = require('nodemailer');
 const fs = require('fs');
