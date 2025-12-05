@@ -139,119 +139,115 @@ app.post('/api/admin/generate-bulk', async (req, res) => {
 
     // PureImage Setup
     const PImage = require('pureimage');
-    // Ensure font is loaded once
-    const fontPath = path.join(__dirname, 'fonts', 'OpenSans-Regular.ttf');
-    const font = PImage.registerFont(fontPath, 'Open Sans');
-    await new Promise(r => font.load(r));
 
-    for (const student of students) {
-        try {
-            // A. Generate ID
-            const certId = `HF-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    // 1. PRE-LOAD ASSETS ONCE (Performance Optimization)
+    try {
+        // Load Font
+        const fontPath = path.join(__dirname, 'fonts', 'OpenSans-Regular.ttf');
+        const font = PImage.registerFont(fontPath, 'Open Sans');
+        await new Promise(r => font.load(r));
 
-            // B. Generate QR
-            // Point to Main Website
-            const verificationURL = `https://www.highfurries.com/verify?id=${certId}`;
-            // QR as Data URL is not directly supported by PImage easily, 
-            // but we can decode it if we save it to buffer or stream.
-            // Workaround: Save QR to buffer then stream to PImage or use simple method?
-            // PImage doesn't support DataURL directly. 
-            // We will skip QR rendering on image for now to restore stability, or 
-            // implement a workaround if critical. USER PRIORITY: Fix error first.
-            // Skipping QR visual on certificate for immediate fix. ID is printed.
+        // Load Template Image
+        const templatePath = path.join(__dirname, 'template.jpg');
+        const templateStream = fs.createReadStream(templatePath);
+        const templateImage = await PImage.decodeJPEGFromStream(templateStream);
 
-            // C. Create Certificate Image
-            const templatePath = path.join(__dirname, 'template.jpg');
+        // Process sequentially to avoid memory spike, but assets are cached
+        for (const student of students) {
+            try {
+                // A. Generate ID
+                const certId = `HF-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-            // Decode JPEG
-            const templateStream = fs.createReadStream(templatePath);
-            const templateImage = await PImage.decodeJPEGFromStream(templateStream);
+                // B. Create Certificate Image
+                // Create a new canvas for this student
+                const canvas = PImage.make(templateImage.width, templateImage.height);
+                const ctx = canvas.getContext('2d');
 
-            const canvas = PImage.make(templateImage.width, templateImage.height);
-            const ctx = canvas.getContext('2d');
+                // Draw Cached Template
+                ctx.drawImage(templateImage, 0, 0);
 
-            // Draw Template
-            ctx.drawImage(templateImage, 0, 0);
+                // Text Configuration
+                ctx.fillStyle = '#000000';
+                ctx.textAlign = 'center';
 
-            // Text Configuration
-            ctx.fillStyle = '#000000'; // Full hex needed
-            ctx.textAlign = 'center';
+                // 1. Candidate Name (Center, Big)
+                ctx.font = "80pt 'Open Sans'";
+                ctx.fillText(student.name, canvas.width / 2, canvas.height / 2 - 50);
 
-            // 1. Candidate Name (Center, Big)
-            ctx.font = "80pt 'Open Sans'";
-            ctx.fillText(student.name, canvas.width / 2, canvas.height / 2 - 50);
+                // Font for details
+                ctx.font = "50pt 'Open Sans'";
 
-            // Font for details
-            ctx.font = "50pt 'Open Sans'";
+                // 2. Hours 
+                ctx.fillText(student.hours, canvas.width / 2 - 200, canvas.height / 2 + 100);
 
-            // 2. Hours 
-            ctx.fillText(student.hours, canvas.width / 2 - 200, canvas.height / 2 + 100);
+                // 3. Position 
+                ctx.fillText(student.position, canvas.width / 2 + 400, canvas.height / 2 + 100);
 
-            // 3. Position 
-            ctx.fillText(student.position, canvas.width / 2 + 400, canvas.height / 2 + 100);
+                // 4. From Date
+                ctx.fillText(student.startDate, canvas.width / 2 - 150, canvas.height / 2 + 250);
 
-            // 4. From Date
-            ctx.fillText(student.startDate, canvas.width / 2 - 150, canvas.height / 2 + 250);
+                // 5. To Date
+                ctx.fillText(student.endDate, canvas.width / 2 + 250, canvas.height / 2 + 250);
 
-            // 5. To Date
-            ctx.fillText(student.endDate, canvas.width / 2 + 250, canvas.height / 2 + 250);
+                // ID
+                ctx.font = "30pt 'Open Sans'";
+                ctx.textAlign = 'right';
+                ctx.fillText(`ID: ${certId}`, canvas.width - 50, 60);
 
-            // ID
-            ctx.font = "30pt 'Open Sans'";
-            ctx.textAlign = 'right'; // pureimage supports basic align
-            ctx.fillText(`ID: ${certId}`, canvas.width - 50, 60);
+                // C. Upload to Cloudinary
+                let imageUrl = 'https://placehold.co/600x400';
 
-            // D. Upload to Cloudinary
-            // PImage writes to stream. We need to pipe this to Cloudinary.
+                if (process.env.CLOUDINARY_CLOUD_NAME) {
+                    const { PassThrough } = require('stream');
+                    const stream = new PassThrough();
 
-            let imageUrl = 'https://placehold.co/600x400';
+                    const uploadPromise = new Promise((resolve, reject) => {
+                        const uploadStream = cloudinary.uploader.upload_stream(
+                            { folder: 'certificates' },
+                            (error, result) => {
+                                if (error) reject(error);
+                                else resolve(result);
+                            }
+                        );
+                        stream.pipe(uploadStream);
+                    });
 
-            if (process.env.CLOUDINARY_CLOUD_NAME) {
-                // Create a PassThrough stream
-                const { PassThrough } = require('stream');
-                const stream = new PassThrough();
+                    // Encode to stream
+                    await PImage.encodePNGToStream(canvas, stream);
 
-                // Write PNG to stream
-                const uploadPromise = new Promise((resolve, reject) => {
-                    const uploadStream = cloudinary.uploader.upload_stream(
-                        { folder: 'certificates' },
-                        (error, result) => {
-                            if (error) reject(error);
-                            else resolve(result);
-                        }
-                    );
-                    stream.pipe(uploadStream);
+                    const result = await uploadPromise;
+                    imageUrl = result.secure_url;
+                }
+
+                // D. Persistent & Notify (Parallelize these)
+                const savePromise = Certificate.create({
+                    certId,
+                    candidateName: student.name,
+                    position: student.position,
+                    hours: student.hours,
+                    startDate: student.startDate,
+                    endDate: student.endDate,
+                    email: student.email,
+                    issueDate: new Date().toLocaleDateString(),
+                    cloudinaryUrl: imageUrl
                 });
 
-                // Start encoding
-                await PImage.encodePNGToStream(canvas, stream);
+                const emailPromise = sendCertEmail(student.email, student.name, imageUrl);
 
-                const result = await uploadPromise;
-                imageUrl = result.secure_url;
+                // Wait for both
+                await Promise.all([savePromise, emailPromise]);
+
+                results.push({ email: student.email, status: 'success', certId });
+
+            } catch (innerError) {
+                console.error(`Error processing student ${student.email}:`, innerError);
+                results.push({ email: student.email, status: 'failed', error: innerError.message });
             }
-
-            // E. Save to DB
-            const newCert = await Certificate.create({
-                certId,
-                candidateName: student.name,
-                position: student.position,
-                hours: student.hours,
-                startDate: student.startDate,
-                endDate: student.endDate,
-                email: student.email,
-                issueDate: new Date().toLocaleDateString(),
-                cloudinaryUrl: imageUrl
-            });
-
-            // F. Send Email
-            await sendCertEmail(student.email, student.name, imageUrl);
-
-            results.push({ email: student.email, status: 'success', certId });
-
-        } catch (error) {
-            console.error(error);
-            results.push({ email: student.email, status: 'failed', error: error.message });
         }
+
+    } catch (globalError) {
+        console.error("Global generation error:", globalError);
+        return res.status(500).json({ success: false, message: 'Server error during generation init' });
     }
 
     res.json({ success: true, results });
@@ -322,8 +318,10 @@ app.get('/api/admin/registry', async (req, res) => {
     // In real app, verify admin-token here
     try {
         const certs = await Certificate.find().sort({ _id: -1 }); // Newest first
+        console.log(`[Registry] Found ${certs.length} certificates.`);
         res.json({ success: true, certificates: certs });
     } catch (error) {
+        console.error('[Registry] Error:', error);
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });
