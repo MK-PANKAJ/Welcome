@@ -2,7 +2,16 @@ const Datastore = require('nedb-promises');
 const path = require('path');
 
 // Initialize database
-const dbPath = path.resolve(__dirname, 'certificates.db');
+const dbDir = process.env.PERSISTENT_STORAGE_PATH || __dirname;
+const dbPath = path.join(dbDir, 'certificates.db');
+
+// Ensure directory exists if using persistent path
+const fs = require('fs');
+if (process.env.PERSISTENT_STORAGE_PATH && !fs.existsSync(dbDir)) {
+    console.log(`Creating persistent directory: ${dbDir}`);
+    fs.mkdirSync(dbDir, { recursive: true });
+}
+
 const db = Datastore.create({ filename: dbPath, autoload: true });
 
 console.log('Connected to NeDB database at', dbPath);
