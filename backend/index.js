@@ -36,7 +36,7 @@ const CERTIFICATE_LAYOUT = {
         "fontSize": 25
     },
     "startDate": {
-        "x": 575,
+        "x": 580,
         "y": 434,
         "fontSize": 20
     },
