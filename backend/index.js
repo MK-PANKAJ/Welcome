@@ -263,8 +263,9 @@ app.post('/api/admin/generate-bulk', async (req, res) => {
             }
         }
 
+        console.log('[Bulk] Generation completed for all students.');
     } catch (globalError) {
-        console.error("Global generation error:", globalError);
+        console.error("[Bulk] Global generation error:", globalError);
         return res.status(500).json({ success: false, message: 'Server error during generation init: ' + globalError.message });
     } finally {
         if (browser) await browser.close();
@@ -369,6 +370,7 @@ app.post('/api/admin/generate-single', async (req, res) => {
     let browser = null;
 
     try {
+        console.log('[Single] Launching browser...');
         const puppeteer = require('puppeteer');
         // Launch Browser
         browser = await puppeteer.launch({
@@ -376,6 +378,7 @@ app.post('/api/admin/generate-single', async (req, res) => {
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
         const page = await browser.newPage();
+        console.log('[Single] Browser page created.');
 
 
 
@@ -408,13 +411,16 @@ app.post('/api/admin/generate-single', async (req, res) => {
 
         const finalHtml = htmlTemplate.replace('</body>', `${contentHtml}</body>`);
 
+        console.log('[Single] Setting content...');
         await page.setContent(finalHtml, { waitUntil: 'networkidle0' });
         await page.setViewport({ width: 1024, height: 723 });
         // Wait for fonts to be ready
         await page.evaluate(() => document.fonts.ready);
+        console.log('[Single] Taking screenshot...');
 
         // C. Screenshot
         const imageBuffer = await page.screenshot({ type: 'png' });
+        console.log('[Single] Screenshot captured.');
 
 
 
@@ -432,12 +438,15 @@ app.post('/api/admin/generate-single', async (req, res) => {
                 ).end(imageBuffer);
             });
 
+            console.log('[Single] Uploading to Cloudinary...');
             const result = await uploadPromise;
             imageUrl = result.secure_url;
+            console.log(`[Single] Uploaded: ${imageUrl}`);
         }
 
 
         // E. Save to DB
+        console.log('[Single] Saving to DB...');
         const newCert = await Certificate.create({
             certId,
             candidateName: name,
@@ -456,7 +465,7 @@ app.post('/api/admin/generate-single', async (req, res) => {
         res.json({ success: true, certificate: newCert });
 
     } catch (error) {
-        console.error(error);
+        console.error('[Single] Error:', error);
         res.status(500).json({ success: false, message: error.message });
     } finally {
         if (browser) await browser.close();
