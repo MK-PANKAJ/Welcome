@@ -186,6 +186,11 @@ app.post('/api/admin/generate-bulk', async (req, res) => {
         const bgData = fs.readFileSync(bgPath).toString('base64');
         const bgDataUri = `data:image/jpeg;base64,${bgData}`;
 
+        // 3. Load Base64 Font (Playfair Display)
+        const fontPath = path.join(__dirname, 'fonts', 'PlayfairDisplay-Regular.ttf');
+        const fontData = fs.readFileSync(fontPath).toString('base64');
+        const fontDataUri = `data:font/ttf;base64,${fontData}`;
+
         // --- Dynamic Layout Configuration ---
         const layout = CERTIFICATE_LAYOUT;
 
@@ -199,7 +204,11 @@ app.post('/api/admin/generate-bulk', async (req, res) => {
                 // We construct the HTML content dynamically
                 const contentHtml = `
                     <style>
-                        body { background-image: url('${bgDataUri}'); }
+                        @font-face {
+                            font-family: 'Playfair Display';
+                            src: url('${fontDataUri}') format('truetype');
+                        }
+                        body { background-image: url('${bgDataUri}'); font-family: 'Playfair Display', serif; }
                     </style>
                     <div class="field" style="left: ${layout.name.x}px; top: ${layout.name.y}px; font-size: ${layout.name.fontSize}px;">${student.name}</div>
                     <div class="field" style="left: ${layout.hours.x}px; top: ${layout.hours.y}px; font-size: ${layout.hours.fontSize}px;">${student.hours}</div>
@@ -212,10 +221,14 @@ app.post('/api/admin/generate-bulk', async (req, res) => {
                 // We insert content before the closing body tag
                 const finalHtml = htmlTemplate.replace('</body>', `${contentHtml}</body>`);
 
-                await page.setContent(finalHtml, { waitUntil: 'networkidle0' });
+                await page.setContent(finalHtml, { waitUntil: 'domcontentloaded', timeout: 60000 });
                 await page.setViewport({ width: 1024, height: 723 });
-                // Wait for fonts to be ready
-                await page.evaluate(() => document.fonts.ready);
+                // Wait for fonts to be ready, but don't crash if they fail
+                try {
+                    await page.evaluate(() => document.fonts.ready);
+                } catch (e) {
+                    console.warn('[Bulk] Warning: Font loading timed out or failed, proceeding anyway.');
+                }
 
                 // C. Take Screenshot (Buffer)
                 const imageBuffer = await page.screenshot({ type: 'png' });
@@ -391,6 +404,11 @@ app.post('/api/admin/generate-single', async (req, res) => {
         const bgData = fs.readFileSync(bgPath).toString('base64');
         const bgDataUri = `data:image/jpeg;base64,${bgData}`;
 
+        // 3. Load Base64 Font
+        const fontPath = path.join(__dirname, 'fonts', 'PlayfairDisplay-Regular.ttf');
+        const fontData = fs.readFileSync(fontPath).toString('base64');
+        const fontDataUri = `data:font/ttf;base64,${fontData}`;
+
         // A. Generate ID
         const certId = `HF-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
@@ -400,7 +418,11 @@ app.post('/api/admin/generate-single', async (req, res) => {
         // B. Inject Content
         const contentHtml = `
             <style>
-                body { background-image: url('${bgDataUri}'); }
+                @font-face {
+                    font-family: 'Playfair Display';
+                    src: url('${fontDataUri}') format('truetype');
+                }
+                body { background-image: url('${bgDataUri}'); font-family: 'Playfair Display', serif; }
             </style>
             <div class="field" style="left: ${layout.name.x}px; top: ${layout.name.y}px; font-size: ${layout.name.fontSize}px;">${name}</div>
             <div class="field" style="left: ${layout.hours.x}px; top: ${layout.hours.y}px; font-size: ${layout.hours.fontSize}px;">${hours}</div>
@@ -412,10 +434,14 @@ app.post('/api/admin/generate-single', async (req, res) => {
         const finalHtml = htmlTemplate.replace('</body>', `${contentHtml}</body>`);
 
         console.log('[Single] Setting content...');
-        await page.setContent(finalHtml, { waitUntil: 'networkidle0' });
+        await page.setContent(finalHtml, { waitUntil: 'domcontentloaded', timeout: 60000 });
         await page.setViewport({ width: 1024, height: 723 });
         // Wait for fonts to be ready
-        await page.evaluate(() => document.fonts.ready);
+        try {
+            await page.evaluate(() => document.fonts.ready);
+        } catch (e) {
+            console.warn('[Single] Warning: Font loading timed out or failed, proceeding anyway.');
+        }
         console.log('[Single] Taking screenshot...');
 
         // C. Screenshot
