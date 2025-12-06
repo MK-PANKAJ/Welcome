@@ -35,12 +35,12 @@ const CERTIFICATE_LAYOUT = {
     },
     "startDate": {
         "x": 474,
-        "y": 440,
+        "y": 437,
         "fontSize": 15
     },
     "endDate": {
-        "x": 549,
-        "y": 439,
+        "x": 554,
+        "y": 437,
         "fontSize": 15
     },
     "certId": {
@@ -212,8 +212,10 @@ app.post('/api/admin/generate-bulk', async (req, res) => {
                 // We insert content before the closing body tag
                 const finalHtml = htmlTemplate.replace('</body>', `${contentHtml}</body>`);
 
-                await page.setContent(finalHtml);
+                await page.setContent(finalHtml, { waitUntil: 'networkidle0' });
                 await page.setViewport({ width: 1024, height: 723 });
+                // Wait for fonts to be ready
+                await page.evaluate(() => document.fonts.ready);
 
                 // C. Take Screenshot (Buffer)
                 const imageBuffer = await page.screenshot({ type: 'png' });
@@ -407,8 +409,10 @@ app.post('/api/admin/generate-single', async (req, res) => {
 
         const finalHtml = htmlTemplate.replace('</body>', `${contentHtml}</body>`);
 
-        await page.setContent(finalHtml);
+        await page.setContent(finalHtml, { waitUntil: 'networkidle0' });
         await page.setViewport({ width: 1024, height: 723 });
+        // Wait for fonts to be ready
+        await page.evaluate(() => document.fonts.ready);
 
         // C. Screenshot
         const imageBuffer = await page.screenshot({ type: 'png' });

@@ -4,9 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <title>Certificate Designer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap"
+        rel="stylesheet">
     <style>
         body {
-            font-family: sans-serif;
+            font-family: 'Playfair Display', serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -75,232 +79,155 @@
     </div>
 
     <textarea id="output" readonly placeholder="Configuration JSON will appear here..."></textarea>
-    <!DOCTYPE html>
-    <html lang="en">
 
-    <head>
-        <meta charset="UTF-8">
-        <title>Certificate Designer</title>
-        <style>
-            body {
-                font-family: sans-serif;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                padding: 20px;
-                background: #f0f0f0;
+    <script>
+        const container = document.getElementById('canvas-container');
+        const fileInput = document.getElementById('fileInput');
+        const output = document.getElementById('output');
+
+        // Initial Layout State with Font Sizes
+        let layout = {
+            name: { x: 512, y: 300, fontSize: 80, label: "CANDIDATE NAME" },
+            hours: { x: 300, y: 450, fontSize: 50, label: "20 Hours" },
+            position: { x: 692, y: 450, fontSize: 50, label: "Intern" },
+            startDate: { x: 300, y: 600, fontSize: 50, label: "Jan 1, 2024" },
+            endDate: { x: 700, y: 600, fontSize: 50, label: "Feb 1, 2024" },
+            certId: { x: 900, y: 60, fontSize: 30, label: "ID: HF-2024-1234" }
+        };
+
+        let activeKey = null;
+
+        // UI Controls for Active Item
+        const controlsDiv = document.getElementById('controls');
+        const editorDiv = document.createElement('div');
+        editorDiv.style.marginTop = '10px';
+        editorDiv.style.padding = '10px';
+        editorDiv.style.border = '1px solid #ddd';
+        editorDiv.style.background = '#fff';
+        editorDiv.style.display = 'none';
+        editorDiv.innerHTML = `
+        <strong>Edit Selected:</strong> <span id="activeLabel"></span><br>
+        <label>Font Size (pt): <input type="number" id="fontSizeInput" value="50" style="width: 60px"></label>
+    `;
+        controlsDiv.appendChild(editorDiv);
+
+        const fontSizeInput = document.getElementById('fontSizeInput');
+        const activeLabel = document.getElementById('activeLabel');
+
+        fontSizeInput.addEventListener('input', (e) => {
+            if (activeKey) {
+                const size = parseInt(e.target.value, 10);
+                layout[activeKey].fontSize = size;
+                document.querySelector(`div[data-key="${activeKey}"]`).style.fontSize = (size * 0.7) + 'px'; // approximate px conversion for display
+                updateOutput();
             }
+        });
 
-            #canvas-container {
-                position: relative;
-                border: 2px dashed #ccc;
-                margin-top: 20px;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                background: white;
-                overflow: hidden;
-            }
+        let imgWidth = 1024;
+        let imgHeight = 768;
 
-            .draggable {
-                position: absolute;
-                cursor: move;
-                padding: 5px;
-                background: rgba(255, 255, 255, 0.7);
-                border: 1px solid #000;
-                white-space: nowrap;
-                user-select: none;
-                transform: translate(-50%, -50%);
-            }
+        fileInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
 
-            .draggable:hover {
-                background: rgba(255, 255, 100, 0.9);
-                z-index: 10;
-            }
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const img = new Image();
+                img.onload = function () {
+                    imgWidth = img.width;
+                    imgHeight = img.height;
 
-            #controls {
-                margin-bottom: 20px;
-                text-align: center;
-            }
+                    // Set container size
+                    container.style.width = imgWidth + 'px';
+                    container.style.height = imgHeight + 'px';
+                    container.innerHTML = ''; // Clear placeholder
 
-            #output {
-                margin-top: 20px;
-                width: 80%;
-                height: 150px;
-            }
+                    // Set background
+                    container.style.backgroundImage = `url(${event.target.result})`;
+                    container.style.backgroundSize = 'contain';
 
-            .info {
-                font-size: 12px;
-                color: #666;
-                margin-top: 5px;
-            }
-        </style>
-    </head>
+                    // Create Draggables
+                    Object.keys(layout).forEach(key => {
+                        createDraggable(key, layout[key]);
+                    });
 
-    <body>
-
-        <h1>Certificate Layout Designer</h1>
-
-        <div id="controls">
-            <p>1. Upload your <code>template.jpg</code> to start.</p>
-            <input type="file" id="fileInput" accept="image/*">
-            <p class="info">2. Drag the text boxes to the correct positions on your certificate.</p>
-            <p class="info">3. Copy the configuration JSON below and send it to the developer.</p>
-        </div>
-
-        <div id="canvas-container">
-            <!-- Image will be loaded here -->
-            <p style="padding: 50px; text-align: center; color: #999;">No Image Loaded</p>
-        </div>
-
-        <textarea id="output" readonly placeholder="Configuration JSON will appear here..."></textarea>
-
-        <script>
-            const container = document.getElementById('canvas-container');
-            const fileInput = document.getElementById('fileInput');
-            const output = document.getElementById('output');
-
-            // Initial Layout State with Font Sizes
-            let layout = {
-                name: { x: 512, y: 300, fontSize: 80, label: "CANDIDATE NAME" },
-                hours: { x: 300, y: 450, fontSize: 50, label: "20 Hours" },
-                position: { x: 692, y: 450, fontSize: 50, label: "Intern" },
-                startDate: { x: 300, y: 600, fontSize: 50, label: "Jan 1, 2024" },
-                endDate: { x: 700, y: 600, fontSize: 50, label: "Feb 1, 2024" },
-                certId: { x: 900, y: 60, fontSize: 30, label: "ID: HF-2024-1234" }
-            };
-
-            let activeKey = null;
-
-            // UI Controls for Active Item
-            const controlsDiv = document.getElementById('controls');
-            const editorDiv = document.createElement('div');
-            editorDiv.style.marginTop = '10px';
-            editorDiv.style.padding = '10px';
-            editorDiv.style.border = '1px solid #ddd';
-            editorDiv.style.background = '#fff';
-            editorDiv.style.display = 'none';
-            editorDiv.innerHTML = `
-            <strong>Edit Selected:</strong> <span id="activeLabel"></span><br>
-            <label>Font Size (pt): <input type="number" id="fontSizeInput" value="50" style="width: 60px"></label>
-        `;
-            controlsDiv.appendChild(editorDiv);
-
-            const fontSizeInput = document.getElementById('fontSizeInput');
-            const activeLabel = document.getElementById('activeLabel');
-
-            fontSizeInput.addEventListener('input', (e) => {
-                if (activeKey) {
-                    const size = parseInt(e.target.value, 10);
-                    layout[activeKey].fontSize = size;
-                    document.querySelector(`div[data-key="${activeKey}"]`).style.fontSize = (size * 0.7) + 'px'; // approximate px conversion for display
                     updateOutput();
+                }
+                img.src = event.target.result;
+            }
+            reader.readAsDataURL(file);
+        });
+
+        function createDraggable(key, data) {
+            const el = document.createElement('div');
+            el.className = 'draggable';
+            el.textContent = data.label;
+            el.style.left = data.x + 'px';
+            el.style.top = data.y + 'px';
+            // Approximate display size (browsers render pt differently than canvas sometimes, checking scale)
+            // Assuming 1pt approx 1.33px, but simplified here for visual aid
+            el.style.fontSize = (data.fontSize * 0.7) + 'px';
+            el.dataset.key = key;
+
+            let isDragging = false;
+
+            el.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                el.style.zIndex = 100;
+
+                // Set Active
+                activeKey = key;
+                activeLabel.textContent = key;
+                fontSizeInput.value = layout[key].fontSize;
+                editorDiv.style.display = 'inline-block';
+
+                // Highlight 
+                document.querySelectorAll('.draggable').forEach(d => d.style.borderColor = '#000');
+                el.style.borderColor = 'blue';
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+
+                const rect = container.getBoundingClientRect();
+                let x = e.clientX - rect.left;
+                let y = e.clientY - rect.top;
+
+                // Bounds check
+                x = Math.max(0, Math.min(x, imgWidth));
+                y = Math.max(0, Math.min(y, imgHeight));
+
+                el.style.left = x + 'px';
+                el.style.top = y + 'px';
+
+                // Update state
+                layout[key].x = Math.round(x);
+                layout[key].y = Math.round(y);
+                updateOutput();
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    el.style.zIndex = '';
                 }
             });
 
-            let imgWidth = 1024;
-            let imgHeight = 768;
+            container.appendChild(el);
+        }
 
-            fileInput.addEventListener('change', function (e) {
-                const file = e.target.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = function (event) {
-                    const img = new Image();
-                    img.onload = function () {
-                        imgWidth = img.width;
-                        imgHeight = img.height;
-
-                        // Set container size
-                        container.style.width = imgWidth + 'px';
-                        container.style.height = imgHeight + 'px';
-                        container.innerHTML = ''; // Clear placeholder
-
-                        // Set background
-                        container.style.backgroundImage = `url(${event.target.result})`;
-                        container.style.backgroundSize = 'contain';
-
-                        // Create Draggables
-                        Object.keys(layout).forEach(key => {
-                            createDraggable(key, layout[key]);
-                        });
-
-                        updateOutput();
-                    }
-                    img.src = event.target.result;
-                }
-                reader.readAsDataURL(file);
+        function updateOutput() {
+            const cleanLayout = {};
+            Object.keys(layout).forEach(k => {
+                cleanLayout[k] = {
+                    x: layout[k].x,
+                    y: layout[k].y,
+                    fontSize: layout[k].fontSize
+                };
             });
+            output.value = JSON.stringify(cleanLayout, null, 4);
+        }
+    </script>
+</body>
 
-            function createDraggable(key, data) {
-                const el = document.createElement('div');
-                el.className = 'draggable';
-                el.textContent = data.label;
-                el.style.left = data.x + 'px';
-                el.style.top = data.y + 'px';
-                // Approximate display size (browsers render pt differently than canvas sometimes, checking scale)
-                // Assuming 1pt approx 1.33px, but simplified here for visual aid
-                el.style.fontSize = (data.fontSize * 0.7) + 'px';
-                el.dataset.key = key;
-
-                let isDragging = false;
-
-                el.addEventListener('mousedown', (e) => {
-                    isDragging = true;
-                    el.style.zIndex = 100;
-
-                    // Set Active
-                    activeKey = key;
-                    activeLabel.textContent = key;
-                    fontSizeInput.value = layout[key].fontSize;
-                    editorDiv.style.display = 'inline-block';
-
-                    // Highlight
-                    document.querySelectorAll('.draggable').forEach(d => d.style.borderColor = '#000');
-                    el.style.borderColor = 'blue';
-                });
-
-                document.addEventListener('mousemove', (e) => {
-                    if (!isDragging) return;
-
-                    const rect = container.getBoundingClientRect();
-                    let x = e.clientX - rect.left;
-                    let y = e.clientY - rect.top;
-
-                    // Bounds check
-                    x = Math.max(0, Math.min(x, imgWidth));
-                    y = Math.max(0, Math.min(y, imgHeight));
-
-                    el.style.left = x + 'px';
-                    el.style.top = y + 'px';
-
-                    // Update state
-                    layout[key].x = Math.round(x);
-                    layout[key].y = Math.round(y);
-                    updateOutput();
-                });
-
-                document.addEventListener('mouseup', () => {
-                    if (isDragging) {
-                        isDragging = false;
-                        el.style.zIndex = '';
-                    }
-                });
-
-                container.appendChild(el);
-            }
-
-            function updateOutput() {
-                const cleanLayout = {};
-                Object.keys(layout).forEach(k => {
-                    cleanLayout[k] = {
-                        x: layout[k].x,
-                        y: layout[k].y,
-                        fontSize: layout[k].fontSize
-                    };
-                });
-                output.value = JSON.stringify(cleanLayout, null, 4);
-            }
-        </script>
-    </body>
-
-    </html>
+</html>
