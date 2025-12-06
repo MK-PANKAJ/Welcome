@@ -233,32 +233,32 @@ export default function Dashboard() {
                         <h2 className="text-lg font-bold mb-6">Generate Single Certificate</h2>
                         <form onSubmit={handleSingleSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">Candidate Name</label>
-                                <input name="name" type="text" required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" value={singleForm.name} onChange={handleSingleChange} />
+                                <label htmlFor="name" className="block text-sm font-medium text-gray-700">Candidate Name</label>
+                                <input id="name" name="name" type="text" autoComplete="name" required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" value={singleForm.name} onChange={handleSingleChange} />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700">Position/Course</label>
-                                    <input name="position" type="text" required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" value={singleForm.position} onChange={handleSingleChange} />
+                                    <label htmlFor="position" className="block text-sm font-medium text-gray-700">Position/Course</label>
+                                    <input id="position" name="position" type="text" autoComplete="organization-title" required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" value={singleForm.position} onChange={handleSingleChange} />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700">Hours</label>
-                                    <input name="hours" type="text" required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" value={singleForm.hours} onChange={handleSingleChange} />
+                                    <label htmlFor="hours" className="block text-sm font-medium text-gray-700">Hours</label>
+                                    <input id="hours" name="hours" type="text" autoComplete="off" required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" value={singleForm.hours} onChange={handleSingleChange} />
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700">Start Date</label>
-                                    <input name="startDate" type="text" required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" value={singleForm.startDate} onChange={handleSingleChange} />
+                                    <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">Start Date</label>
+                                    <input id="startDate" name="startDate" type="text" autoComplete="off" required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" value={singleForm.startDate} onChange={handleSingleChange} />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700">End Date</label>
-                                    <input name="endDate" type="text" required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" value={singleForm.endDate} onChange={handleSingleChange} />
+                                    <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">End Date</label>
+                                    <input id="endDate" name="endDate" type="text" autoComplete="off" required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" value={singleForm.endDate} onChange={handleSingleChange} />
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">Email</label>
-                                <input name="email" type="email" required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" value={singleForm.email} onChange={handleSingleChange} />
+                                <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+                                <input id="email" name="email" type="email" autoComplete="email" required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" value={singleForm.email} onChange={handleSingleChange} />
                             </div>
 
                             <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 disabled:opacity-50">
