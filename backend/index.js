@@ -25,16 +25,16 @@ const CERTIFICATE_LAYOUT = {
     },
     "hours": {
         "x": 546,
-        "y": 384,
+        "y": 383,
         "fontSize": 20
     },
     "position": {
         "x": 522,
-        "y": 412,
+        "y": 414,
         "fontSize": 30
     },
     "startDate": {
-        "x": 531,
+        "x": 546,
         "y": 437,
         "fontSize": 20
     },
