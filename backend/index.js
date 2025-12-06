@@ -18,12 +18,36 @@ app.use(express.json());
 
 // Certificate Layout Configuration
 const CERTIFICATE_LAYOUT = {
-    name: { x: 511, y: 342, fontSize: 80 },
-    hours: { x: 544, y: 385, fontSize: 20 },
-    position: { x: 512, y: 412, fontSize: 40 },
-    startDate: { x: 474, y: 439, fontSize: 15 },
-    endDate: { x: 546, y: 439, fontSize: 15 },
-    certId: { x: 882, y: 53, fontSize: 30 }
+    "name": {
+        "x": 511,
+        "y": 341,
+        "fontSize": 70
+    },
+    "hours": {
+        "x": 544,
+        "y": 385,
+        "fontSize": 20
+    },
+    "position": {
+        "x": 512,
+        "y": 412,
+        "fontSize": 35
+    },
+    "startDate": {
+        "x": 474,
+        "y": 440,
+        "fontSize": 15
+    },
+    "endDate": {
+        "x": 549,
+        "y": 439,
+        "fontSize": 15
+    },
+    "certId": {
+        "x": 882,
+        "y": 53,
+        "fontSize": 25
+    }
 };
 
 // Allow Admin Portal, Main Website, and Localhost
