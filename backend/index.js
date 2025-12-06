@@ -19,27 +19,27 @@ app.use(express.json());
 // Certificate Layout Configuration
 const CERTIFICATE_LAYOUT = {
     "name": {
-        "x": 519,
+        "x": 524,
         "y": 341,
-        "fontSize": 62
+        "fontSize": 60
     },
     "hours": {
         "x": 546,
-        "y": 385,
+        "y": 384,
         "fontSize": 20
     },
     "position": {
-        "x": 519,
-        "y": 411,
-        "fontSize": 25
+        "x": 522,
+        "y": 412,
+        "fontSize": 30
     },
     "startDate": {
-        "x": 519,
-        "y": 436,
+        "x": 531,
+        "y": 437,
         "fontSize": 20
     },
     "certId": {
-        "x": 882,
+        "x": 884,
         "y": 49,
         "fontSize": 25
     }
