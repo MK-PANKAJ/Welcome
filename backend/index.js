@@ -27,7 +27,7 @@ const CERTIFICATE_LAYOUT = {
     },
     "hours": {
         "x": 545,
-        "y": 386,
+        "y": 382,
         "fontSize": 20
     },
     "position": {
@@ -36,8 +36,8 @@ const CERTIFICATE_LAYOUT = {
         "fontSize": 30
     },
     "startDate": {
-        "x": 536,
-        "y": 456,
+        "x": 550,
+        "y": 434,
         "fontSize": 20
     },
     "certId": {
