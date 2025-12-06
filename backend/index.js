@@ -1,4 +1,6 @@
+console.log('Starting application...');
 require('dotenv').config();
+console.log('Environment loaded.');
 const express = require('express');
 const { Resend } = require('resend');
 const cors = require('cors');
@@ -139,6 +141,10 @@ const sendCertEmail = async (toEmail, name, cloudinaryUrl) => {
 
 
 // --- Routes ---
+
+app.get('/', (req, res) => {
+    res.send('High Furries Certificate Backend is Running');
+});
 
 // 1. Admin Login (Stub)
 app.post('/api/admin/login', (req, res) => {
@@ -497,4 +503,7 @@ app.delete('/api/admin/delete/:id', async (req, res) => {
 
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+console.log(`Attempting to start server on 0.0.0.0:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running successfully on port ${PORT}`);
+});
