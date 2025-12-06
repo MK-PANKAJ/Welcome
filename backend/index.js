@@ -15,6 +15,17 @@ const app = express();
 app.use(express.json());
 
 // --- Configuration ---
+
+// Certificate Layout Configuration
+const CERTIFICATE_LAYOUT = {
+    name: { x: 510, y: 344, fontSize: 90 },
+    hours: { x: 545, y: 386, fontSize: 20 },
+    position: { x: 538, y: 403, fontSize: 40 },
+    startDate: { x: 474, y: 438, fontSize: 23 },
+    endDate: { x: 548, y: 438, fontSize: 23 },
+    certId: { x: 861, y: 50, fontSize: 35 }
+};
+
 // Allow Admin Portal, Main Website, and Localhost
 // Plus any extra origins defined in env (comma separated)
 const envAllowed = process.env.ALLOWED_ORIGINS
@@ -151,14 +162,7 @@ app.post('/api/admin/generate-bulk', async (req, res) => {
         const bgDataUri = `data:image/jpeg;base64,${bgData}`;
 
         // --- Dynamic Layout Configuration ---
-        const layout = {
-            name: { x: 510, y: 344, fontSize: 90 },
-            hours: { x: 545, y: 386, fontSize: 20 },
-            position: { x: 538, y: 403, fontSize: 40 },
-            startDate: { x: 474, y: 438, fontSize: 23 },
-            endDate: { x: 548, y: 438, fontSize: 23 },
-            certId: { x: 861, y: 50, fontSize: 35 }
-        };
+        const layout = CERTIFICATE_LAYOUT;
 
         // Process sequentially
         for (const student of students) {
@@ -362,14 +366,7 @@ app.post('/api/admin/generate-single', async (req, res) => {
         const certId = `HF-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
         // --- Dynamic Layout Configuration ---
-        const layout = {
-            name: { x: 510, y: 344, fontSize: 90 },
-            hours: { x: 545, y: 386, fontSize: 20 },
-            position: { x: 538, y: 403, fontSize: 40 },
-            startDate: { x: 474, y: 438, fontSize: 23 },
-            endDate: { x: 548, y: 438, fontSize: 23 },
-            certId: { x: 861, y: 50, fontSize: 35 }
-        };
+        const layout = CERTIFICATE_LAYOUT;
 
         // B. Inject Content
         const contentHtml = `
