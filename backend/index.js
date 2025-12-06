@@ -21,9 +21,9 @@ const CERTIFICATE_LAYOUT = {
     name: { x: 511, y: 342, fontSize: 80 },
     hours: { x: 544, y: 385, fontSize: 20 },
     position: { x: 512, y: 412, fontSize: 50 },
-    startDate: { x: 464, y: 438, fontSize: 20 },
-    endDate: { x: 550, y: 437, fontSize: 20 },
-    certId: { x: 886, y: 60, fontSize: 30 }
+    startDate: { x: 487, y: 438, fontSize: 20 },
+    endDate: { x: 557, y: 438, fontSize: 20 },
+    certId: { x: 815, y: 60, fontSize: 30 }
 };
 
 // Allow Admin Portal, Main Website, and Localhost
@@ -181,7 +181,7 @@ app.post('/api/admin/generate-bulk', async (req, res) => {
                     <div class="field" style="left: ${layout.position.x}px; top: ${layout.position.y}px; font-size: ${layout.position.fontSize}px;">${student.position}</div>
                     <div class="field" style="left: ${layout.startDate.x}px; top: ${layout.startDate.y}px; font-size: ${layout.startDate.fontSize}px;">${student.startDate}</div>
                     <div class="field" style="left: ${layout.endDate.x}px; top: ${layout.endDate.y}px; font-size: ${layout.endDate.fontSize}px;">${student.endDate}</div>
-                    <div class="field id-field" style="left: ${layout.certId.x}px; top: ${layout.certId.y}px; font-size: ${layout.certId.fontSize}px;">ID: ${certId}</div>
+                    <div class="field id-field" style="left: ${layout.certId.x}px; top: ${layout.certId.y}px; font-size: ${layout.certId.fontSize}px;"> ${certId}</div>
                 `;
 
                 // Set Page Content: Combine boilerplate + injected content
@@ -378,7 +378,7 @@ app.post('/api/admin/generate-single', async (req, res) => {
             <div class="field" style="left: ${layout.position.x}px; top: ${layout.position.y}px; font-size: ${layout.position.fontSize}px;">${position}</div>
             <div class="field" style="left: ${layout.startDate.x}px; top: ${layout.startDate.y}px; font-size: ${layout.startDate.fontSize}px;">${startDate}</div>
             <div class="field" style="left: ${layout.endDate.x}px; top: ${layout.endDate.y}px; font-size: ${layout.endDate.fontSize}px;">${endDate}</div>
-            <div class="field id-field" style="left: ${layout.certId.x}px; top: ${layout.certId.y}px; font-size: ${layout.certId.fontSize}px;">ID: ${certId}</div>
+            <div class="field id-field" style="left: ${layout.certId.x}px; top: ${layout.certId.y}px; font-size: ${layout.certId.fontSize}px;"> ${certId}</div>
         `;
 
         const finalHtml = htmlTemplate.replace('</body>', `${contentHtml}</body>`);
