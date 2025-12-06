@@ -157,6 +157,48 @@ app.post('/api/admin/generate-bulk', async (req, res) => {
                 const canvas = PImage.make(templateImage.width, templateImage.height);
                 const ctx = canvas.getContext('2d');
 
+                // Draw Cached Template
+                ctx.drawImage(templateImage, 0, 0);
+
+                // --- Dynamic Layout Configuration ---
+                const layout = {
+                    name: { x: 510, y: 344, fontSize: 90 },
+                    hours: { x: 545, y: 386, fontSize: 20 },
+                    position: { x: 538, y: 403, fontSize: 40 },
+                    startDate: { x: 474, y: 438, fontSize: 23 },
+                    endDate: { x: 548, y: 438, fontSize: 23 },
+                    certId: { x: 861, y: 50, fontSize: 35 }
+                };
+
+                // Text Configuration
+                ctx.fillStyle = '#000000';
+                ctx.textAlign = 'center';
+
+                // 1. Candidate Name
+                ctx.font = `${layout.name.fontSize}pt 'Open Sans'`;
+                ctx.fillText(student.name, layout.name.x, layout.name.y);
+
+                // 2. Hours 
+                ctx.font = `${layout.hours.fontSize}pt 'Open Sans'`;
+                ctx.fillText(student.hours, layout.hours.x, layout.hours.y);
+
+                // 3. Position 
+                ctx.font = `${layout.position.fontSize}pt 'Open Sans'`;
+                ctx.fillText(student.position, layout.position.x, layout.position.y);
+
+                // 4. From Date
+                ctx.font = `${layout.startDate.fontSize}pt 'Open Sans'`;
+                ctx.fillText(student.startDate, layout.startDate.x, layout.startDate.y);
+
+                // 5. To Date
+                ctx.font = `${layout.endDate.fontSize}pt 'Open Sans'`;
+                ctx.fillText(student.endDate, layout.endDate.x, layout.endDate.y);
+
+                // ID
+                ctx.font = `${layout.certId.fontSize}pt 'Open Sans'`;
+                ctx.textAlign = 'right';
+                ctx.fillText(`${certId}`, layout.certId.x, layout.certId.y);
+
                 // C. Upload to Cloudinary
                 let imageUrl = 'https://placehold.co/600x400';
 
@@ -337,21 +379,20 @@ app.post('/api/admin/generate-single', async (req, res) => {
         ctx.drawImage(templateImage, 0, 0);
 
         // --- Dynamic Layout Configuration ---
-        // Same fallback layout as bulk generation
         const layout = {
-            name: { x: 512, y: 310, fontSize: 80 },
-            hours: { x: 332, y: 450, fontSize: 50 },
-            position: { x: 692, y: 450, fontSize: 50 },
-            startDate: { x: 332, y: 600, fontSize: 50 },
-            endDate: { x: 692, y: 600, fontSize: 50 },
-            certId: { x: 950, y: 60, fontSize: 30 }
+            name: { x: 510, y: 344, fontSize: 90 },
+            hours: { x: 545, y: 386, fontSize: 20 },
+            position: { x: 538, y: 403, fontSize: 40 },
+            startDate: { x: 474, y: 438, fontSize: 23 },
+            endDate: { x: 548, y: 438, fontSize: 23 },
+            certId: { x: 861, y: 50, fontSize: 35 }
         };
 
         // Text Configuration
         ctx.fillStyle = '#000000';
         ctx.textAlign = 'center';
 
-        // 1. Candidate Name (Center, Big)
+        // 1. Candidate Name
         ctx.font = `${layout.name.fontSize}pt 'Open Sans'`;
         ctx.fillText(name, layout.name.x, layout.name.y);
 
