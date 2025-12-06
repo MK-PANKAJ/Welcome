@@ -26,18 +26,18 @@ const CERTIFICATE_LAYOUT = {
         "fontSize": 60
     },
     "hours": {
-        "x": 546,
-        "y": 387,
+        "x": 545,
+        "y": 384,
         "fontSize": 20
     },
     "position": {
-        "x": 522,
-        "y": 418,
+        "x": 511,
+        "y": 410,
         "fontSize": 30
     },
     "startDate": {
-        "x": 546,
-        "y": 447,
+        "x": 536,
+        "y": 436,
         "fontSize": 20
     },
     "certId": {
