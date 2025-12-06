@@ -84,7 +84,7 @@ const sendCertEmail = async (toEmail, name, cloudinaryUrl) => {
     if (resend) {
         try {
             const data = await resend.emails.send({
-                from: 'High Furries System <onboarding@resend.dev>', // Default Resend testing domain
+                from: process.env.EMAIL_FROM || 'High Furries System <onboarding@resend.dev>',
                 to: [toEmail],
                 subject: 'Your High Furries Certificate',
                 html: htmlContent
