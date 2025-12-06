@@ -160,33 +160,48 @@ app.post('/api/admin/generate-bulk', async (req, res) => {
                 // Draw Cached Template
                 ctx.drawImage(templateImage, 0, 0);
 
+                // --- Dynamic Layout Configuration ---
+                // Default fallback if not set
+                const layout = {
+                    name: { x: 512, y: 310 },
+                    hours: { x: 332, y: 450 },
+                    position: { x: 692, y: 450 },
+                    startDate: { x: 332, y: 600 },
+                    endDate: { x: 692, y: 600 },
+                    certId: { x: 950, y: 60 }
+                };
+
+                // TODO: Replace 'layout' values above with user provided JSON
+
                 // Text Configuration
                 ctx.fillStyle = '#000000';
                 ctx.textAlign = 'center';
 
                 // 1. Candidate Name (Center, Big)
                 ctx.font = "80pt 'Open Sans'";
-                ctx.fillText(student.name, canvas.width / 2, canvas.height / 2 - 50);
+                ctx.fillText(student.name, layout.name.x, layout.name.y);
 
                 // Font for details
                 ctx.font = "50pt 'Open Sans'";
 
                 // 2. Hours 
-                ctx.fillText(student.hours, canvas.width / 2 - 200, canvas.height / 2 + 100);
+                ctx.fillText(student.hours, layout.hours.x, layout.hours.y);
 
                 // 3. Position 
-                ctx.fillText(student.position, canvas.width / 2 + 400, canvas.height / 2 + 100);
+                ctx.fillText(student.position, layout.position.x, layout.position.y);
 
                 // 4. From Date
-                ctx.fillText(student.startDate, canvas.width / 2 - 150, canvas.height / 2 + 250);
+                ctx.fillText(student.startDate, layout.startDate.x, layout.startDate.y);
 
                 // 5. To Date
-                ctx.fillText(student.endDate, canvas.width / 2 + 250, canvas.height / 2 + 250);
+                ctx.fillText(student.endDate, layout.endDate.x, layout.endDate.y);
 
                 // ID
                 ctx.font = "30pt 'Open Sans'";
                 ctx.textAlign = 'right';
-                ctx.fillText(`ID: ${certId}`, canvas.width - 50, 60);
+                // Note: ID alignment logic in original was pure right-align at specific X
+                // We keep textAlign right but use dynamic X/Y
+                ctx.fillText(`ID: ${certId}`, layout.certId.x, layout.certId.y);
 
                 // C. Upload to Cloudinary
                 let imageUrl = 'https://placehold.co/600x400';
@@ -367,33 +382,44 @@ app.post('/api/admin/generate-single', async (req, res) => {
         // Draw Template
         ctx.drawImage(templateImage, 0, 0);
 
+        // --- Dynamic Layout Configuration ---
+        // Same fallback layout as bulk generation
+        const layout = {
+            name: { x: 512, y: 310 },
+            hours: { x: 332, y: 450 },
+            position: { x: 692, y: 450 },
+            startDate: { x: 332, y: 600 },
+            endDate: { x: 692, y: 600 },
+            certId: { x: 950, y: 60 }
+        };
+
         // Text Configuration
         ctx.fillStyle = '#000000';
         ctx.textAlign = 'center';
 
         // 1. Candidate Name (Center, Big)
         ctx.font = "80pt 'Open Sans'";
-        ctx.fillText(name, canvas.width / 2, canvas.height / 2 - 50);
+        ctx.fillText(name, layout.name.x, layout.name.y);
 
         // Font for details
         ctx.font = "50pt 'Open Sans'";
 
         // 2. Hours 
-        ctx.fillText(hours, canvas.width / 2 - 200, canvas.height / 2 + 100);
+        ctx.fillText(hours, layout.hours.x, layout.hours.y);
 
         // 3. Position 
-        ctx.fillText(position, canvas.width / 2 + 400, canvas.height / 2 + 100);
+        ctx.fillText(position, layout.position.x, layout.position.y);
 
         // 4. From Date
-        ctx.fillText(startDate, canvas.width / 2 - 150, canvas.height / 2 + 250);
+        ctx.fillText(startDate, layout.startDate.x, layout.startDate.y);
 
         // 5. To Date
-        ctx.fillText(endDate, canvas.width / 2 + 250, canvas.height / 2 + 250);
+        ctx.fillText(endDate, layout.endDate.x, layout.endDate.y);
 
         // ID
         ctx.font = "30pt 'Open Sans'";
         ctx.textAlign = 'right';
-        ctx.fillText(`ID: ${certId}`, canvas.width - 50, 60);
+        ctx.fillText(`ID: ${certId}`, layout.certId.x, layout.certId.y);
 
         // D. Upload to Cloudinary
         let imageUrl = 'https://placehold.co/600x400';
