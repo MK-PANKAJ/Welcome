@@ -157,52 +157,6 @@ app.post('/api/admin/generate-bulk', async (req, res) => {
                 const canvas = PImage.make(templateImage.width, templateImage.height);
                 const ctx = canvas.getContext('2d');
 
-                // Draw Cached Template
-                ctx.drawImage(templateImage, 0, 0);
-
-                // --- Dynamic Layout Configuration ---
-                // Default fallback if not set
-                const layout = {
-                    name: { x: 512, y: 310 },
-                    hours: { x: 332, y: 450 },
-                    position: { x: 692, y: 450 },
-                    startDate: { x: 332, y: 600 },
-                    endDate: { x: 692, y: 600 },
-                    certId: { x: 950, y: 60 }
-                };
-
-                // TODO: Replace 'layout' values above with user provided JSON
-
-                // Text Configuration
-                ctx.fillStyle = '#000000';
-                ctx.textAlign = 'center';
-
-                // 1. Candidate Name (Center, Big)
-                ctx.font = "80pt 'Open Sans'";
-                ctx.fillText(student.name, layout.name.x, layout.name.y);
-
-                // Font for details
-                ctx.font = "50pt 'Open Sans'";
-
-                // 2. Hours 
-                ctx.fillText(student.hours, layout.hours.x, layout.hours.y);
-
-                // 3. Position 
-                ctx.fillText(student.position, layout.position.x, layout.position.y);
-
-                // 4. From Date
-                ctx.fillText(student.startDate, layout.startDate.x, layout.startDate.y);
-
-                // 5. To Date
-                ctx.fillText(student.endDate, layout.endDate.x, layout.endDate.y);
-
-                // ID
-                ctx.font = "30pt 'Open Sans'";
-                ctx.textAlign = 'right';
-                // Note: ID alignment logic in original was pure right-align at specific X
-                // We keep textAlign right but use dynamic X/Y
-                ctx.fillText(`ID: ${certId}`, layout.certId.x, layout.certId.y);
-
                 // C. Upload to Cloudinary
                 let imageUrl = 'https://placehold.co/600x400';
 
@@ -385,12 +339,12 @@ app.post('/api/admin/generate-single', async (req, res) => {
         // --- Dynamic Layout Configuration ---
         // Same fallback layout as bulk generation
         const layout = {
-            name: { x: 512, y: 310 },
-            hours: { x: 332, y: 450 },
-            position: { x: 692, y: 450 },
-            startDate: { x: 332, y: 600 },
-            endDate: { x: 692, y: 600 },
-            certId: { x: 950, y: 60 }
+            name: { x: 512, y: 310, fontSize: 80 },
+            hours: { x: 332, y: 450, fontSize: 50 },
+            position: { x: 692, y: 450, fontSize: 50 },
+            startDate: { x: 332, y: 600, fontSize: 50 },
+            endDate: { x: 692, y: 600, fontSize: 50 },
+            certId: { x: 950, y: 60, fontSize: 30 }
         };
 
         // Text Configuration
@@ -398,26 +352,27 @@ app.post('/api/admin/generate-single', async (req, res) => {
         ctx.textAlign = 'center';
 
         // 1. Candidate Name (Center, Big)
-        ctx.font = "80pt 'Open Sans'";
+        ctx.font = `${layout.name.fontSize}pt 'Open Sans'`;
         ctx.fillText(name, layout.name.x, layout.name.y);
 
-        // Font for details
-        ctx.font = "50pt 'Open Sans'";
-
         // 2. Hours 
+        ctx.font = `${layout.hours.fontSize}pt 'Open Sans'`;
         ctx.fillText(hours, layout.hours.x, layout.hours.y);
 
         // 3. Position 
+        ctx.font = `${layout.position.fontSize}pt 'Open Sans'`;
         ctx.fillText(position, layout.position.x, layout.position.y);
 
         // 4. From Date
+        ctx.font = `${layout.startDate.fontSize}pt 'Open Sans'`;
         ctx.fillText(startDate, layout.startDate.x, layout.startDate.y);
 
         // 5. To Date
+        ctx.font = `${layout.endDate.fontSize}pt 'Open Sans'`;
         ctx.fillText(endDate, layout.endDate.x, layout.endDate.y);
 
         // ID
-        ctx.font = "30pt 'Open Sans'";
+        ctx.font = `${layout.certId.fontSize}pt 'Open Sans'`;
         ctx.textAlign = 'right';
         ctx.fillText(`ID: ${certId}`, layout.certId.x, layout.certId.y);
 
