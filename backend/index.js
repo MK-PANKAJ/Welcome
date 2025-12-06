@@ -19,33 +19,28 @@ app.use(express.json());
 // Certificate Layout Configuration
 const CERTIFICATE_LAYOUT = {
     "name": {
-        "x": 511,
+        "x": 519,
         "y": 341,
-        "fontSize": 70
+        "fontSize": 62
     },
     "hours": {
-        "x": 544,
+        "x": 546,
         "y": 385,
         "fontSize": 20
     },
     "position": {
-        "x": 512,
-        "y": 412,
-        "fontSize": 35
+        "x": 519,
+        "y": 411,
+        "fontSize": 25
     },
     "startDate": {
-        "x": 474,
-        "y": 437,
-        "fontSize": 15
-    },
-    "endDate": {
-        "x": 554,
-        "y": 437,
-        "fontSize": 15
+        "x": 519,
+        "y": 436,
+        "fontSize": 20
     },
     "certId": {
         "x": 882,
-        "y": 53,
+        "y": 49,
         "fontSize": 25
     }
 };
@@ -203,8 +198,7 @@ app.post('/api/admin/generate-bulk', async (req, res) => {
                     <div class="field" style="left: ${layout.name.x}px; top: ${layout.name.y}px; font-size: ${layout.name.fontSize}px;">${student.name}</div>
                     <div class="field" style="left: ${layout.hours.x}px; top: ${layout.hours.y}px; font-size: ${layout.hours.fontSize}px;">${student.hours}</div>
                     <div class="field" style="left: ${layout.position.x}px; top: ${layout.position.y}px; font-size: ${layout.position.fontSize}px;">${student.position}</div>
-                    <div class="field" style="left: ${layout.startDate.x}px; top: ${layout.startDate.y}px; font-size: ${layout.startDate.fontSize}px;">${student.startDate}</div>
-                    <div class="field" style="left: ${layout.endDate.x}px; top: ${layout.endDate.y}px; font-size: ${layout.endDate.fontSize}px;">${student.endDate}</div>
+                    <div class="field" style="left: ${layout.startDate.x}px; top: ${layout.startDate.y}px; font-size: ${layout.startDate.fontSize}px;">${student.startDate} to ${student.endDate}</div>
                     <div class="field id-field" style="left: ${layout.certId.x}px; top: ${layout.certId.y}px; font-size: ${layout.certId.fontSize}px;"> ${certId}</div>
                 `;
 
@@ -402,8 +396,7 @@ app.post('/api/admin/generate-single', async (req, res) => {
             <div class="field" style="left: ${layout.name.x}px; top: ${layout.name.y}px; font-size: ${layout.name.fontSize}px;">${name}</div>
             <div class="field" style="left: ${layout.hours.x}px; top: ${layout.hours.y}px; font-size: ${layout.hours.fontSize}px;">${hours}</div>
             <div class="field" style="left: ${layout.position.x}px; top: ${layout.position.y}px; font-size: ${layout.position.fontSize}px;">${position}</div>
-            <div class="field" style="left: ${layout.startDate.x}px; top: ${layout.startDate.y}px; font-size: ${layout.startDate.fontSize}px;">${startDate}</div>
-            <div class="field" style="left: ${layout.endDate.x}px; top: ${layout.endDate.y}px; font-size: ${layout.endDate.fontSize}px;">${endDate}</div>
+            <div class="field" style="left: ${layout.startDate.x}px; top: ${layout.startDate.y}px; font-size: ${layout.startDate.fontSize}px;">${startDate} to ${endDate}</div>
             <div class="field id-field" style="left: ${layout.certId.x}px; top: ${layout.certId.y}px; font-size: ${layout.certId.fontSize}px;"> ${certId}</div>
         `;
 
