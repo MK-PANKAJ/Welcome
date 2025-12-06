@@ -20,9 +20,9 @@ app.use(express.json());
 const CERTIFICATE_LAYOUT = {
     name: { x: 511, y: 342, fontSize: 80 },
     hours: { x: 544, y: 385, fontSize: 20 },
-    position: { x: 512, y: 412, fontSize: 50 },
-    startDate: { x: 476, y: 439, fontSize: 20 },
-    endDate: { x: 549, y: 439, fontSize: 20 },
+    position: { x: 512, y: 412, fontSize: 40 },
+    startDate: { x: 474, y: 439, fontSize: 15 },
+    endDate: { x: 546, y: 439, fontSize: 15 },
     certId: { x: 882, y: 53, fontSize: 30 }
 };
 
