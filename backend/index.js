@@ -21,9 +21,9 @@ const CERTIFICATE_LAYOUT = {
     name: { x: 511, y: 342, fontSize: 80 },
     hours: { x: 544, y: 385, fontSize: 20 },
     position: { x: 512, y: 412, fontSize: 50 },
-    startDate: { x: 487, y: 438, fontSize: 20 },
-    endDate: { x: 557, y: 438, fontSize: 20 },
-    certId: { x: 815, y: 60, fontSize: 30 }
+    startDate: { x: 476, y: 439, fontSize: 20 },
+    endDate: { x: 549, y: 439, fontSize: 20 },
+    certId: { x: 882, y: 53, fontSize: 30 }
 };
 
 // Allow Admin Portal, Main Website, and Localhost
