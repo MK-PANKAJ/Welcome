@@ -347,6 +347,8 @@ app.post('/api/admin/generate-single', async (req, res) => {
         });
         const page = await browser.newPage();
 
+
+
         // 1. Load HTML Template
         const templatePath = path.join(__dirname, 'certificate.html');
         let htmlTemplate = fs.readFileSync(templatePath, 'utf8');
@@ -385,10 +387,13 @@ app.post('/api/admin/generate-single', async (req, res) => {
         const finalHtml = htmlTemplate.replace('</body>', `${contentHtml}</body>`);
 
         await page.setContent(finalHtml);
+        await page.setContent(finalHtml);
         await page.setViewport({ width: 1024, height: 723 });
 
         // C. Screenshot
         const imageBuffer = await page.screenshot({ type: 'png' });
+
+
 
         // D. Upload to Cloudinary
         let imageUrl = 'https://placehold.co/600x400';
@@ -407,6 +412,7 @@ app.post('/api/admin/generate-single', async (req, res) => {
             const result = await uploadPromise;
             imageUrl = result.secure_url;
         }
+
 
         // E. Save to DB
         const newCert = await Certificate.create({
