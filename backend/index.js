@@ -174,28 +174,31 @@ app.post('/api/admin/generate-bulk', async (req, res) => {
                 ctx.fillStyle = '#000000';
                 ctx.textAlign = 'center';
 
+                // Helper to match tool's visual scaling (Tool renders at 0.7x px)
+                const getFont = (size) => `${Math.round(size * 0.7)}px 'Open Sans'`;
+
                 // 1. Candidate Name
-                ctx.font = `${layout.name.fontSize}pt 'Open Sans'`;
+                ctx.font = getFont(layout.name.fontSize);
                 ctx.fillText(student.name, layout.name.x, layout.name.y);
 
                 // 2. Hours 
-                ctx.font = `${layout.hours.fontSize}pt 'Open Sans'`;
+                ctx.font = getFont(layout.hours.fontSize);
                 ctx.fillText(student.hours, layout.hours.x, layout.hours.y);
 
                 // 3. Position 
-                ctx.font = `${layout.position.fontSize}pt 'Open Sans'`;
+                ctx.font = getFont(layout.position.fontSize);
                 ctx.fillText(student.position, layout.position.x, layout.position.y);
 
                 // 4. From Date
-                ctx.font = `${layout.startDate.fontSize}pt 'Open Sans'`;
+                ctx.font = getFont(layout.startDate.fontSize);
                 ctx.fillText(student.startDate, layout.startDate.x, layout.startDate.y);
 
                 // 5. To Date
-                ctx.font = `${layout.endDate.fontSize}pt 'Open Sans'`;
+                ctx.font = getFont(layout.endDate.fontSize);
                 ctx.fillText(student.endDate, layout.endDate.x, layout.endDate.y);
 
                 // ID
-                ctx.font = `${layout.certId.fontSize}pt 'Open Sans'`;
+                ctx.font = getFont(layout.certId.fontSize);
                 ctx.textAlign = 'right';
                 ctx.fillText(`${certId}`, layout.certId.x, layout.certId.y);
 
@@ -392,28 +395,31 @@ app.post('/api/admin/generate-single', async (req, res) => {
         ctx.fillStyle = '#000000';
         ctx.textAlign = 'center';
 
+        // Helper to match tool's visual scaling
+        const getFont = (size) => `${Math.round(size * 0.7)}px 'Open Sans'`;
+
         // 1. Candidate Name
-        ctx.font = `${layout.name.fontSize}pt 'Open Sans'`;
+        ctx.font = getFont(layout.name.fontSize);
         ctx.fillText(name, layout.name.x, layout.name.y);
 
         // 2. Hours 
-        ctx.font = `${layout.hours.fontSize}pt 'Open Sans'`;
+        ctx.font = getFont(layout.hours.fontSize);
         ctx.fillText(hours, layout.hours.x, layout.hours.y);
 
         // 3. Position 
-        ctx.font = `${layout.position.fontSize}pt 'Open Sans'`;
+        ctx.font = getFont(layout.position.fontSize);
         ctx.fillText(position, layout.position.x, layout.position.y);
 
         // 4. From Date
-        ctx.font = `${layout.startDate.fontSize}pt 'Open Sans'`;
+        ctx.font = getFont(layout.startDate.fontSize);
         ctx.fillText(startDate, layout.startDate.x, layout.startDate.y);
 
         // 5. To Date
-        ctx.font = `${layout.endDate.fontSize}pt 'Open Sans'`;
+        ctx.font = getFont(layout.endDate.fontSize);
         ctx.fillText(endDate, layout.endDate.x, layout.endDate.y);
 
         // ID
-        ctx.font = `${layout.certId.fontSize}pt 'Open Sans'`;
+        ctx.font = getFont(layout.certId.fontSize);
         ctx.textAlign = 'right';
         ctx.fillText(`ID: ${certId}`, layout.certId.x, layout.certId.y);
 
