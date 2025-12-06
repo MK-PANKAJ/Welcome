@@ -384,7 +384,6 @@ app.post('/api/admin/generate-single', async (req, res) => {
         const finalHtml = htmlTemplate.replace('</body>', `${contentHtml}</body>`);
 
         await page.setContent(finalHtml);
-        await page.setContent(finalHtml);
         await page.setViewport({ width: 1024, height: 723 });
 
         // C. Screenshot
