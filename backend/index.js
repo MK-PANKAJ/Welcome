@@ -130,104 +130,85 @@ app.post('/api/admin/generate-bulk', async (req, res) => {
     }
 
     const results = [];
+    let browser = null;
 
-    // PureImage Setup
-    const PImage = require('pureimage');
-
-    // 1. PRE-LOAD ASSETS ONCE (Performance Optimization)
     try {
-        // Load Font
-        const fontPath = path.join(__dirname, 'fonts', 'OpenSans-Regular.ttf');
-        const font = PImage.registerFont(fontPath, 'Open Sans');
-        await new Promise(r => font.load(r));
+        const puppeteer = require('puppeteer');
+        // Launch Browser
+        browser = await puppeteer.launch({
+            headless: 'new',
+            args: ['--no-sandbox', '--disable-setuid-sandbox'] // Needed for some environments like Render
+        });
+        const page = await browser.newPage();
 
-        // Load Template Image
-        const templatePath = path.join(__dirname, 'template.jpg');
-        const templateStream = fs.createReadStream(templatePath);
-        const templateImage = await PImage.decodeJPEGFromStream(templateStream);
+        // 1. Load HTML Template
+        const templatePath = path.join(__dirname, 'certificate.html');
+        let htmlTemplate = fs.readFileSync(templatePath, 'utf8');
 
-        // Process sequentially to avoid memory spike, but assets are cached
+        // 2. Load Base64 Background Image (to avoid file path issues in browser context)
+        const bgPath = path.join(__dirname, 'template.jpg');
+        const bgData = fs.readFileSync(bgPath).toString('base64');
+        const bgDataUri = `data:image/jpeg;base64,${bgData}`;
+
+        // --- Dynamic Layout Configuration ---
+        const layout = {
+            name: { x: 510, y: 344, fontSize: 90 },
+            hours: { x: 545, y: 386, fontSize: 20 },
+            position: { x: 538, y: 403, fontSize: 40 },
+            startDate: { x: 474, y: 438, fontSize: 23 },
+            endDate: { x: 548, y: 438, fontSize: 23 },
+            certId: { x: 861, y: 50, fontSize: 35 }
+        };
+
+        // Process sequentially
         for (const student of students) {
             try {
                 // A. Generate ID
                 const certId = `HF-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-                // B. Create Certificate Image
-                // Create a new canvas for this student
-                const canvas = PImage.make(templateImage.width, templateImage.height);
-                const ctx = canvas.getContext('2d');
+                // B. Inject Content into HTML
+                // We construct the HTML content dynamically
+                const contentHtml = `
+                    <style>
+                        body { background-image: url('${bgDataUri}'); }
+                    </style>
+                    <div class="field" style="left: ${layout.name.x}px; top: ${layout.name.y}px; font-size: ${layout.name.fontSize}px;">${student.name}</div>
+                    <div class="field" style="left: ${layout.hours.x}px; top: ${layout.hours.y}px; font-size: ${layout.hours.fontSize}px;">${student.hours}</div>
+                    <div class="field" style="left: ${layout.position.x}px; top: ${layout.position.y}px; font-size: ${layout.position.fontSize}px;">${student.position}</div>
+                    <div class="field" style="left: ${layout.startDate.x}px; top: ${layout.startDate.y}px; font-size: ${layout.startDate.fontSize}px;">${student.startDate}</div>
+                    <div class="field" style="left: ${layout.endDate.x}px; top: ${layout.endDate.y}px; font-size: ${layout.endDate.fontSize}px;">${student.endDate}</div>
+                    <div class="field id-field" style="left: ${layout.certId.x}px; top: ${layout.certId.y}px; font-size: ${layout.certId.fontSize}px;">ID: ${certId}</div>
+                `;
 
-                // Draw Cached Template
-                ctx.drawImage(templateImage, 0, 0);
+                // Set Page Content: Combine boilerplate + injected content
+                // We insert content before the closing body tag
+                const finalHtml = htmlTemplate.replace('</body>', `${contentHtml}</body>`);
 
-                // --- Dynamic Layout Configuration ---
-                const layout = {
-                    name: { x: 510, y: 344, fontSize: 90 },
-                    hours: { x: 545, y: 386, fontSize: 20 },
-                    position: { x: 538, y: 403, fontSize: 40 },
-                    startDate: { x: 474, y: 438, fontSize: 23 },
-                    endDate: { x: 548, y: 438, fontSize: 23 },
-                    certId: { x: 861, y: 50, fontSize: 35 }
-                };
+                await page.setContent(finalHtml);
+                await page.setViewport({ width: 1024, height: 723 });
 
-                // Text Configuration
-                ctx.fillStyle = '#000000';
-                ctx.textAlign = 'center';
+                // C. Take Screenshot (Buffer)
+                const imageBuffer = await page.screenshot({ type: 'png' });
 
-                // Helper to match tool's visual scaling (Tool renders at 0.7x px)
-                const getFont = (size) => `${Math.round(size * 0.7)}px 'Open Sans'`;
-
-                // 1. Candidate Name
-                ctx.font = getFont(layout.name.fontSize);
-                ctx.fillText(student.name, layout.name.x, layout.name.y);
-
-                // 2. Hours 
-                ctx.font = getFont(layout.hours.fontSize);
-                ctx.fillText(student.hours, layout.hours.x, layout.hours.y);
-
-                // 3. Position 
-                ctx.font = getFont(layout.position.fontSize);
-                ctx.fillText(student.position, layout.position.x, layout.position.y);
-
-                // 4. From Date
-                ctx.font = getFont(layout.startDate.fontSize);
-                ctx.fillText(student.startDate, layout.startDate.x, layout.startDate.y);
-
-                // 5. To Date
-                ctx.font = getFont(layout.endDate.fontSize);
-                ctx.fillText(student.endDate, layout.endDate.x, layout.endDate.y);
-
-                // ID
-                ctx.font = getFont(layout.certId.fontSize);
-                ctx.textAlign = 'right';
-                ctx.fillText(`${certId}`, layout.certId.x, layout.certId.y);
-
-                // C. Upload to Cloudinary
+                // D. Upload to Cloudinary
                 let imageUrl = 'https://placehold.co/600x400';
 
                 if (process.env.CLOUDINARY_CLOUD_NAME) {
-                    const { PassThrough } = require('stream');
-                    const stream = new PassThrough();
-
                     const uploadPromise = new Promise((resolve, reject) => {
-                        const uploadStream = cloudinary.uploader.upload_stream(
+                        cloudinary.uploader.upload_stream(
                             { folder: 'certificates' },
                             (error, result) => {
                                 if (error) reject(error);
                                 else resolve(result);
                             }
-                        );
-                        stream.pipe(uploadStream);
+                        ).end(imageBuffer);
                     });
-
-                    // Encode to stream
-                    await PImage.encodePNGToStream(canvas, stream);
 
                     const result = await uploadPromise;
                     imageUrl = result.secure_url;
                 }
 
-                // D. Persistent & Notify (Parallelize these)
+                // E. Persistent & Notify
                 const savePromise = Certificate.create({
                     certId,
                     candidateName: student.name,
@@ -242,7 +223,6 @@ app.post('/api/admin/generate-bulk', async (req, res) => {
 
                 const emailPromise = sendCertEmail(student.email, student.name, imageUrl);
 
-                // Wait for both
                 await Promise.all([savePromise, emailPromise]);
 
                 results.push({ email: student.email, status: 'success', certId });
@@ -255,7 +235,9 @@ app.post('/api/admin/generate-bulk', async (req, res) => {
 
     } catch (globalError) {
         console.error("Global generation error:", globalError);
-        return res.status(500).json({ success: false, message: 'Server error during generation init' });
+        return res.status(500).json({ success: false, message: 'Server error during generation init: ' + globalError.message });
+    } finally {
+        if (browser) await browser.close();
     }
 
     res.json({ success: true, results });
@@ -354,32 +336,28 @@ app.post('/api/admin/generate-single', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
+    let browser = null;
+
     try {
-        // PureImage Setup
-        const PImage = require('pureimage');
-        const fontPath = path.join(__dirname, 'fonts', 'OpenSans-Regular.ttf');
-        const font = PImage.registerFont(fontPath, 'Open Sans');
-        await new Promise(r => font.load(r));
+        const puppeteer = require('puppeteer');
+        // Launch Browser
+        browser = await puppeteer.launch({
+            headless: 'new',
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
+        const page = await browser.newPage();
+
+        // 1. Load HTML Template
+        const templatePath = path.join(__dirname, 'certificate.html');
+        let htmlTemplate = fs.readFileSync(templatePath, 'utf8');
+
+        // 2. Load Base64 Background Image
+        const bgPath = path.join(__dirname, 'template.jpg');
+        const bgData = fs.readFileSync(bgPath).toString('base64');
+        const bgDataUri = `data:image/jpeg;base64,${bgData}`;
 
         // A. Generate ID
         const certId = `HF-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-
-        // B. Generate QR
-        const verificationURL = `https://www.highfurries.com/verify?id=${certId}`;
-        // QR rendering skipped for pureimage stability - logic matches bulk
-
-        // C. Create Certificate Image
-        const templatePath = path.join(__dirname, 'template.jpg');
-
-        // Decode JPEG
-        const templateStream = fs.createReadStream(templatePath);
-        const templateImage = await PImage.decodeJPEGFromStream(templateStream);
-
-        const canvas = PImage.make(templateImage.width, templateImage.height);
-        const ctx = canvas.getContext('2d');
-
-        // Draw Template
-        ctx.drawImage(templateImage, 0, 0);
 
         // --- Dynamic Layout Configuration ---
         const layout = {
@@ -391,57 +369,40 @@ app.post('/api/admin/generate-single', async (req, res) => {
             certId: { x: 861, y: 50, fontSize: 35 }
         };
 
-        // Text Configuration
-        ctx.fillStyle = '#000000';
-        ctx.textAlign = 'center';
+        // B. Inject Content
+        const contentHtml = `
+            <style>
+                body { background-image: url('${bgDataUri}'); }
+            </style>
+            <div class="field" style="left: ${layout.name.x}px; top: ${layout.name.y}px; font-size: ${layout.name.fontSize}px;">${name}</div>
+            <div class="field" style="left: ${layout.hours.x}px; top: ${layout.hours.y}px; font-size: ${layout.hours.fontSize}px;">${hours}</div>
+            <div class="field" style="left: ${layout.position.x}px; top: ${layout.position.y}px; font-size: ${layout.position.fontSize}px;">${position}</div>
+            <div class="field" style="left: ${layout.startDate.x}px; top: ${layout.startDate.y}px; font-size: ${layout.startDate.fontSize}px;">${startDate}</div>
+            <div class="field" style="left: ${layout.endDate.x}px; top: ${layout.endDate.y}px; font-size: ${layout.endDate.fontSize}px;">${endDate}</div>
+            <div class="field id-field" style="left: ${layout.certId.x}px; top: ${layout.certId.y}px; font-size: ${layout.certId.fontSize}px;">ID: ${certId}</div>
+        `;
 
-        // Helper to match tool's visual scaling
-        const getFont = (size) => `${Math.round(size * 0.7)}px 'Open Sans'`;
+        const finalHtml = htmlTemplate.replace('</body>', `${contentHtml}</body>`);
 
-        // 1. Candidate Name
-        ctx.font = getFont(layout.name.fontSize);
-        ctx.fillText(name, layout.name.x, layout.name.y);
+        await page.setContent(finalHtml);
+        await page.setViewport({ width: 1024, height: 723 });
 
-        // 2. Hours 
-        ctx.font = getFont(layout.hours.fontSize);
-        ctx.fillText(hours, layout.hours.x, layout.hours.y);
-
-        // 3. Position 
-        ctx.font = getFont(layout.position.fontSize);
-        ctx.fillText(position, layout.position.x, layout.position.y);
-
-        // 4. From Date
-        ctx.font = getFont(layout.startDate.fontSize);
-        ctx.fillText(startDate, layout.startDate.x, layout.startDate.y);
-
-        // 5. To Date
-        ctx.font = getFont(layout.endDate.fontSize);
-        ctx.fillText(endDate, layout.endDate.x, layout.endDate.y);
-
-        // ID
-        ctx.font = getFont(layout.certId.fontSize);
-        ctx.textAlign = 'right';
-        ctx.fillText(`ID: ${certId}`, layout.certId.x, layout.certId.y);
+        // C. Screenshot
+        const imageBuffer = await page.screenshot({ type: 'png' });
 
         // D. Upload to Cloudinary
         let imageUrl = 'https://placehold.co/600x400';
 
         if (process.env.CLOUDINARY_CLOUD_NAME) {
-            const { PassThrough } = require('stream');
-            const stream = new PassThrough();
-
             const uploadPromise = new Promise((resolve, reject) => {
-                const uploadStream = cloudinary.uploader.upload_stream(
+                cloudinary.uploader.upload_stream(
                     { folder: 'certificates' },
                     (error, result) => {
                         if (error) reject(error);
                         else resolve(result);
                     }
-                );
-                stream.pipe(uploadStream);
+                ).end(imageBuffer);
             });
-
-            await PImage.encodePNGToStream(canvas, stream);
 
             const result = await uploadPromise;
             imageUrl = result.secure_url;
@@ -468,6 +429,8 @@ app.post('/api/admin/generate-single', async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: error.message });
+    } finally {
+        if (browser) await browser.close();
     }
 });
 
